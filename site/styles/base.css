@@ -1,58 +1,72 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   base — tokens, reset, typography, layout shell, buttons
+   base — tokens, reset, typography, the grain, the cursor, the preloader
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Ground: a wet, near-black slate with a green cast, so copper reads warm
-     against it and the "water" green reads as light rather than paint. */
-  --void:        #04080a;
-  --slate:       #070d0f;
-  --panel:       #0a1214;
-  --panel-lift:  #0e181a;
-  --line:        #172422;
-  --line-soft:   #101a19;
+  /* Ground. A wet, near-black slate with a green cast, so copper reads warm
+     against it and the water green reads as light rather than as paint. */
+  --void:        #04070a;
+  --slate:       #060b0e;
+  --panel:       #091114;
+  --panel-lift:  #0d1619;
+  --panel-hi:    #121e21;
+  --line:        #16221f;
+  --line-soft:   #0f1a18;
+  --line-hair:   rgba(148, 190, 178, 0.08);
 
-  /* Copper and brass, for anything shaped like plumbing. */
+  /* Copper, brass and the shadow inside a cast fitting. */
   --copper:      #b87333;
-  --copper-lit:  #e7b986;
-  --copper-pale: #fbe3c2;
-  --copper-deep: #6b3d18;
+  --copper-lit:  #e9bd8b;
+  --copper-pale: #fdeacd;
+  --copper-mid:  #a25f27;
+  --copper-deep: #5f3414;
+  --copper-void: #33190a;
+  --patina:      #3f7a63;
 
   /* The water. Robinhood green, pushed bright enough to glow on black. */
   --water:        #00e07a;
-  --water-bright: #7bffc0;
+  --water-bright: #86ffc6;
+  --water-pale:   #d6fff0;
   --water-deep:   #007f45;
   --water-dim:    rgba(0, 224, 122, 0.34);
-  --water-wash:   rgba(0, 224, 122, 0.08);
+  --water-wash:   rgba(0, 224, 122, 0.075);
 
-  --text:      #dde8e4;
-  --text-soft: #a9bcb7;
-  --muted:     #748b86;
+  /* Bucket accents. Used consistently in the diagram, the dials and the ledger. */
+  --burn:      #ff8a5b;
+  --drip:      #00e07a;
+  --liquidity: #4bd7ff;
+  --build:     #e9bd8b;
+
+  --text:      #e2ede9;
+  --text-soft: #a8bcb7;
+  --muted:     #6f8782;
+  --faint:     #475855;
 
   --radius-sm: 8px;
   --radius:    14px;
   --radius-lg: 22px;
+  --radius-xl: 30px;
 
-  --shell:  1240px;
-  --gutter: clamp(1.25rem, 4vw, 2.75rem);
+  --shell:  1280px;
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+  --rail:   clamp(0px, calc((100vw - 1280px) / 2 - 34px), 46px);
 
   --font-display: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
 
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
   --ease-fluid: cubic-bezier(0.4, 0.05, 0.2, 1);
+  --ease-snap:  cubic-bezier(0.16, 1.1, 0.3, 1);
 
   color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-
 * { margin: 0; }
 
 html {
   scroll-behavior: smooth;
-  /* The sticky pipe-rail is 72px; don't let anchors land underneath it. */
-  scroll-padding-top: 96px;
+  scroll-padding-top: 104px;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -60,14 +74,13 @@ body {
   background: var(--void);
   color: var(--text);
   font-family: var(--font-display);
-  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.075rem);
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.08rem);
   line-height: 1.62;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-  /* A faint horizontal banding, like light on wet metal. */
+  overflow-x: clip;
   background-image:
-    radial-gradient(1200px 600px at 78% -8%, rgba(0, 224, 122, 0.07), transparent 65%),
-    radial-gradient(900px 520px at 4% 12%, rgba(184, 115, 51, 0.06), transparent 62%);
+    radial-gradient(1400px 700px at 80% -10%, rgba(0, 224, 122, 0.075), transparent 62%),
+    radial-gradient(1000px 560px at -6% 14%, rgba(184, 115, 51, 0.07), transparent 60%);
   background-attachment: fixed;
 }
 
@@ -75,15 +88,13 @@ img, svg, canvas { display: block; max-width: 100%; }
 
 h1, h2, h3, h4 {
   font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.022em;
+  line-height: 1.06;
+  letter-spacing: -0.024em;
   text-wrap: balance;
 }
 
 p { text-wrap: pretty; }
-
 a { color: inherit; text-decoration: none; }
-
 code, pre, .mono { font-family: var(--font-mono); font-size: 0.9em; }
 
 code {
@@ -94,15 +105,196 @@ code {
   padding: 0.08em 0.36em;
 }
 
-:focus-visible {
-  outline: 2px solid var(--water);
-  outline-offset: 3px;
-  border-radius: 4px;
+:focus-visible { outline: 2px solid var(--water); outline-offset: 3px; border-radius: 4px; }
+::selection { background: rgba(0, 224, 122, 0.3); color: #eafff5; }
+
+/* ── the grain ───────────────────────────────────────────────────────────────
+   A fixed film of turbulence over the whole page. It is what stops the large
+   flat panels from reading as flat vector fill, and it costs one element.     */
+
+.grain {
+  position: fixed;
+  inset: -120px;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: var(--grain-src);
+  background-size: 220px 220px;
+  animation: grain-shift 6s steps(6) infinite;
 }
 
-::selection { background: rgba(0, 224, 122, 0.28); color: #eafff5; }
+@keyframes grain-shift {
+  0%   { transform: translate(0, 0); }
+  16%  { transform: translate(-14px, 8px); }
+  33%  { transform: translate(9px, -12px); }
+  50%  { transform: translate(-7px, -6px); }
+  66%  { transform: translate(12px, 10px); }
+  83%  { transform: translate(-11px, 4px); }
+  100% { transform: translate(0, 0); }
+}
 
-/* ── layout ──────────────────────────────────────────────────────────────── */
+/* A vignette, so the eye settles at the middle of the page. */
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 8990;
+  pointer-events: none;
+  background: radial-gradient(130% 100% at 50% 42%, transparent 48%, rgba(0, 0, 0, 0.62) 100%);
+}
+
+/* ── the cursor droplet ──────────────────────────────────────────────────────
+   Pointer-precise devices only. A bead that lags the pointer and swells over
+   anything interactive; touch devices never see it.                           */
+
+.bead {
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 8980;
+  width: 10px; height: 10px;
+  border-radius: 50% 50% 55% 55% / 60% 60% 45% 45%;
+  background: radial-gradient(circle at 35% 30%, var(--water-pale), var(--water) 55%, var(--water-deep));
+  box-shadow: 0 0 14px rgba(0, 224, 122, 0.65);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50px, -50px, 0);
+  transition: opacity 0.3s var(--ease-out), width 0.28s var(--ease-snap), height 0.28s var(--ease-snap);
+}
+
+.bead.is-live { opacity: 0.9; }
+.bead.is-hot { width: 30px; height: 30px; opacity: 0.35; }
+
+@media (hover: none), (pointer: coarse) {
+  .bead { display: none; }
+}
+
+/* ── the preloader: a valve opening ─────────────────────────────────────────
+   The page is "pressurising" — the wheel spins, the gauge sweeps, the shutter
+   splits and drains away. Under 1.6s, and skipped entirely for reduced motion. */
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: grid;
+  place-items: center;
+  background: var(--void);
+}
+
+.boot__panels { position: absolute; inset: 0; }
+
+.boot__panels span {
+  position: absolute;
+  left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, #070d10, #04070a);
+  transition: transform 0.95s var(--ease-fluid);
+}
+
+.boot__panels span:first-child { top: 0; border-bottom: 1px solid var(--line); }
+.boot__panels span:last-child { bottom: 0; border-top: 1px solid var(--line); }
+
+.boot.is-done .boot__panels span:first-child { transform: translateY(-101%); }
+.boot.is-done .boot__panels span:last-child { transform: translateY(101%); }
+.boot.is-done { pointer-events: none; }
+.boot.is-done .boot__core { opacity: 0; transform: scale(0.94); transition: opacity 0.4s, transform 0.5s; }
+.boot.is-gone { display: none; }
+
+.boot__core {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1.4rem;
+}
+
+.boot__wheel { width: 92px; height: 92px; animation: boot-spin 1.5s var(--ease-fluid) forwards; }
+
+@keyframes boot-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(268deg); }
+}
+
+.boot__label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-left: 0.42em;
+}
+
+.boot__bar {
+  width: 200px; height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.boot__bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--water-deep), var(--water), var(--water-bright));
+  box-shadow: 0 0 12px rgba(0, 224, 122, 0.8);
+  animation: boot-fill 1.4s var(--ease-fluid) forwards;
+}
+
+@keyframes boot-fill { to { width: 100%; } }
+
+/* ── the riser: page scroll as a filling pipe ────────────────────────────────
+   Fixed to the left margin on wide screens. The water column height tracks
+   scroll, and a bead rides the meniscus.                                      */
+
+.riser {
+  position: fixed;
+  left: max(0.7rem, var(--rail));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 80;
+  width: 14px;
+  height: min(46vh, 380px);
+  border-radius: 8px;
+  background: linear-gradient(90deg, #0b1215, #060c0e 45%, #0d1518);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out);
+}
+
+.riser.is-live { opacity: 1; }
+
+.riser__fill {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: var(--fill, 0%);
+  background: linear-gradient(180deg, var(--water-bright), var(--water) 24%, var(--water-deep));
+  box-shadow: 0 0 16px rgba(0, 224, 122, 0.55);
+  transition: height 0.18s linear;
+}
+
+.riser__fill::after {
+  /* the meniscus */
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--water-pale);
+  opacity: 0.85;
+  filter: blur(0.4px);
+}
+
+.riser__ticks {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(180deg, transparent 0 23px, rgba(255, 255, 255, 0.11) 23px 24px);
+  pointer-events: none;
+}
+
+@media (max-width: 1180px) { .riser { display: none; } }
+
+/* ── layout ─────────────────────────────────────────────────────────────── */
 
 .shell {
   width: 100%;
@@ -111,46 +303,64 @@ code {
   padding-inline: var(--gutter);
 }
 
-.shell--narrow { max-width: 860px; }
+.shell--narrow { max-width: 880px; }
 
-.section { padding-block: clamp(4.5rem, 9vw, 8.5rem); position: relative; }
+.section { padding-block: clamp(4rem, 8vw, 8rem); position: relative; }
 
-.section__head { max-width: 720px; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+.section__head { max-width: 760px; margin-bottom: clamp(2.5rem, 5vw, 4.25rem); }
 
 .section__kicker {
   display: inline-flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.75rem;
   font-family: var(--font-mono);
-  font-size: 0.74rem;
-  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 1.15rem;
+  margin-bottom: 1.2rem;
 }
 
 .pipe-tick {
-  width: 26px;
-  height: 3px;
+  width: 34px; height: 4px;
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--copper-lit), var(--copper-deep));
-  box-shadow: 0 0 12px rgba(184, 115, 51, 0.5);
+  background: linear-gradient(90deg, var(--copper-pale), var(--copper) 45%, var(--copper-void));
+  box-shadow: 0 0 14px rgba(184, 115, 51, 0.5);
+  position: relative;
 }
 
-.section__title {
-  font-size: clamp(2rem, 1.3rem + 3vw, 3.4rem);
-  margin-bottom: 1.15rem;
+.pipe-tick::after {
+  content: '';
+  position: absolute;
+  right: -7px; top: 50%;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--water);
+  transform: translateY(-50%);
+  box-shadow: 0 0 8px var(--water);
+  animation: tick-drip 3.4s var(--ease-fluid) infinite;
 }
+
+@keyframes tick-drip {
+  0%, 70%, 100% { opacity: 0.35; transform: translateY(-50%) scale(0.7); }
+  80%           { opacity: 1;    transform: translateY(-50%) scale(1.15); }
+}
+
+.section__title { font-size: clamp(2rem, 1.25rem + 3.2vw, 3.6rem); margin-bottom: 1.2rem; }
 
 .section__lede {
   color: var(--text-soft);
-  font-size: clamp(1.02rem, 0.98rem + 0.28vw, 1.18rem);
-  max-width: 62ch;
+  font-size: clamp(1.02rem, 0.98rem + 0.3vw, 1.2rem);
+  max-width: 64ch;
 }
 
 .ink-water {
-  color: var(--water-bright);
-  text-shadow: 0 0 32px rgba(0, 224, 122, 0.35);
+  position: relative;
+  background: linear-gradient(100deg, var(--water-bright), var(--water) 45%, #00a85c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 22px rgba(0, 224, 122, 0.32));
 }
 
 /* ── buttons ─────────────────────────────────────────────────────────────── */
@@ -161,7 +371,7 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 0.62rem;
-  padding: 0.82rem 1.35rem;
+  padding: 0.86rem 1.45rem;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--btn-bg);
@@ -169,51 +379,71 @@ code {
   font-size: 0.95rem;
   letter-spacing: -0.01em;
   cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  transform: translate3d(var(--mx, 0), var(--my, 0), 0);
   transition:
-    transform 0.28s var(--ease-out),
-    border-color 0.28s var(--ease-out),
-    box-shadow 0.28s var(--ease-out),
-    background 0.28s var(--ease-out);
+    transform 0.35s var(--ease-out),
+    border-color 0.3s var(--ease-out),
+    box-shadow 0.3s var(--ease-out);
   white-space: nowrap;
 }
 
-.btn:hover { transform: translateY(-2px); }
-.btn:active { transform: translateY(0); }
+/* A wet sheen that sweeps across on hover. */
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.4) 50%, transparent 68%);
+  transform: translateX(-130%);
+  transition: transform 0.7s var(--ease-fluid);
+}
+
+.btn:hover::before { transform: translateX(130%); }
 
 .btn--primary {
-  --btn-bg: linear-gradient(135deg, var(--water) 0%, #00b863 100%);
+  --btn-bg: linear-gradient(135deg, var(--water-bright) -10%, var(--water) 45%, #00a85c 100%);
   color: #02170d;
   border-color: transparent;
-  box-shadow: 0 10px 34px -12px rgba(0, 224, 122, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 12px 36px -14px rgba(0, 224, 122, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 6px rgba(0, 60, 32, 0.35);
 }
 
-.btn--primary:hover {
-  box-shadow: 0 16px 44px -12px rgba(0, 224, 122, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
+.btn--primary:hover { box-shadow: 0 18px 48px -14px rgba(0, 224, 122, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
 
-.btn--ghost {
-  background: rgba(255, 255, 255, 0.015);
-  color: var(--text);
-  border-color: var(--line);
-}
-
+.btn--ghost { background: rgba(255, 255, 255, 0.016); color: var(--text); }
 .btn--ghost:hover { border-color: var(--water-dim); box-shadow: 0 0 0 4px var(--water-wash); }
 
-/* A droplet that swells and falls on hover — the button "drips". */
 .btn__drip {
-  width: 9px;
-  height: 9px;
+  width: 9px; height: 9px;
   border-radius: 50% 50% 55% 55% / 60% 60% 45% 45%;
-  background: #02170d;
-  opacity: 0.75;
+  background: currentColor;
+  opacity: 0.7;
 }
 
-.btn--primary:hover .btn__drip { animation: btn-drip 1.1s var(--ease-fluid) infinite; }
+.btn--primary:hover .btn__drip { animation: btn-drip 1.05s var(--ease-fluid) infinite; }
 
 @keyframes btn-drip {
   0%   { transform: translateY(-3px) scaleY(0.7); opacity: 0.5; }
-  45%  { transform: translateY(0) scaleY(1.15); opacity: 1; }
-  100% { transform: translateY(7px) scaleY(0.6); opacity: 0; }
+  45%  { transform: translateY(0) scaleY(1.18); opacity: 1; }
+  100% { transform: translateY(8px) scaleY(0.55); opacity: 0; }
+}
+
+/* Click ripple, injected by motion.js. */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: radial-gradient(circle, rgba(214, 255, 240, 0.55), transparent 70%);
+  animation: ripple-out 0.65s var(--ease-out) forwards;
+  pointer-events: none;
+}
+
+@keyframes ripple-out {
+  to { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 
 /* ── utility ─────────────────────────────────────────────────────────────── */
@@ -230,9 +460,8 @@ code {
 
 .skip-link {
   position: absolute;
-  left: 1rem;
-  top: -100px;
-  z-index: 200;
+  left: 1rem; top: -100px;
+  z-index: 9600;
   background: var(--water);
   color: #02170d;
   padding: 0.7rem 1.1rem;
@@ -243,14 +472,19 @@ code {
 
 .skip-link:focus { top: 0; }
 
-/* Scroll-reveal. Elements start displaced and settle when observed. */
+/* Reveals. A wipe rather than a fade — it reads as something being uncovered
+   rather than something being faded in by a library. */
 [data-reveal] {
   opacity: 0;
-  transform: translateY(22px);
-  transition: opacity 0.75s var(--ease-out), transform 0.75s var(--ease-out);
+  transform: translateY(26px);
+  clip-path: inset(0 0 18% 0);
+  transition:
+    opacity 0.85s var(--ease-out),
+    transform 0.85s var(--ease-out),
+    clip-path 0.95s var(--ease-out);
 }
 
-[data-reveal].is-in { opacity: 1; transform: none; }
+[data-reveal].is-in { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -259,5 +493,7 @@ code {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  [data-reveal] { opacity: 1; transform: none; }
+  [data-reveal] { opacity: 1; transform: none; clip-path: none; }
+  .grain { display: none; }
+  .boot { display: none; }
 }
