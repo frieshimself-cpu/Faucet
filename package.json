@@ -1,0 +1,24 @@
+{
+  "name": "faucet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Faucet — the fee-recycling engine and site for Robinhood on Pons. Every fee drips back into the project.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --test dist/test/*.test.js",
+    "faucet": "node dist/src/cli.js",
+    "serve": "node scripts/serve.mjs",
+    "sync:fallback": "node scripts/sync-fallback.mjs",
+    "cycle": "node dist/src/cli.js cycle --epochs 6 --seed 42 --write-site && npm run sync:fallback",
+    "doctor": "node dist/src/cli.js doctor",
+    "policy": "node dist/src/cli.js policy"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.7.0"
+  }
+}

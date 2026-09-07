@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  engine:
+    name: typecheck + tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck and run the test suite
+        run: npm test
+
+      - name: The routing policy must still allocate exactly 100%
+        run: node dist/src/cli.js policy
+
+      - name: A full multi-epoch cycle must conserve every lamport
+        run: node dist/src/cli.js cycle --epochs 8 --seed 1234

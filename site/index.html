@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Robinhood — The Faucet. Every fee drips back.</title>
+<meta name="description" content="Robinhood on Pons. 100% of collected fees are routed back into the project: buyback and burn, holder drip, deeper liquidity, build fund. Provable every epoch." />
+<meta name="theme-color" content="#05080a" />
+<meta property="og:title" content="Robinhood — The Faucet" />
+<meta property="og:description" content="Every fee drips back to the people it came from. 100% recycled, provable every epoch." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%9A%B0%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="styles/base.css" />
+<link rel="stylesheet" href="styles/components.css" />
+<link rel="stylesheet" href="styles/scenes.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ══════════════════════════════════════════ NAV ══════════════════════════════════════════ -->
+<header class="nav" id="nav">
+  <div class="nav__rail" aria-hidden="true"></div>
+  <div class="shell nav__inner">
+    <a class="brand" href="#top" aria-label="Robinhood home">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" fill="none">
+          <path d="M8 14h12a6 6 0 0 1 6 6v4" stroke="url(#brandCopper)" stroke-width="4" stroke-linecap="round"/>
+          <rect x="4" y="9" width="6" height="10" rx="2" fill="url(#brandCopper)"/>
+          <circle cx="26" cy="30" r="3.5" fill="var(--water)"/>
+          <defs>
+            <linearGradient id="brandCopper" x1="4" y1="9" x2="30" y2="28" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#f0c08a"/><stop offset=".5" stop-color="#b87333"/><stop offset="1" stop-color="#8a4f22"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <strong data-bind="project.name">Robinhood</strong>
+        <em data-bind="project.tickerTag">$ROBIN</em>
+      </span>
+    </a>
+
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#loop">The Loop</a>
+      <a href="#split">The Split</a>
+      <a href="#proof">Proof</a>
+      <a href="#ledger">Ledger</a>
+      <a href="#build">Build</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <a class="btn btn--valve" href="#loop">
+      <span class="btn__wheel" aria-hidden="true"></span>
+      Open the tap
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ══════════════════════════════════════════ HERO ═════════════════════════════════════════ -->
+<section class="hero" id="top">
+  <div class="hero__grid" aria-hidden="true"></div>
+  <div class="hero__glow" aria-hidden="true"></div>
+  <canvas class="hero__canvas" id="waterCanvas" aria-hidden="true"></canvas>
+
+  <div class="shell hero__inner">
+    <div class="hero__copy">
+      <p class="eyebrow">
+        <span class="eyebrow__dot" aria-hidden="true"></span>
+        Live on <strong data-bind="project.launchpad">Pons</strong> &middot; Solana
+      </p>
+
+      <h1 class="hero__title">
+        Every fee<br />
+        <span class="hero__title-accent">drips back</span><br />
+        into the project.
+      </h1>
+
+      <p class="hero__lede">
+        Most launches point the fee pipe at somebody's wallet. This one points it back at the
+        pool, the holders, and the build fund — <strong>all of it, every epoch</strong>, and the
+        engine refuses to settle if the numbers don't add to 100%.
+      </p>
+
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="#loop">
+          <span class="btn__drip" aria-hidden="true"></span>
+          See where it goes
+        </a>
+        <a class="btn btn--ghost" href="#proof">Verify a drip</a>
+      </div>
+
+      <div class="ca" data-copy-root>
+        <span class="ca__label">Contract</span>
+        <code class="ca__value" id="contractValue" data-bind="mint.address">not yet minted — set at launch</code>
+        <button class="ca__copy" type="button" data-copy-target="#contractValue" aria-label="Copy contract address">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6.5" y="6.5" width="10" height="12" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M13.5 4.5h-8a2 2 0 0 0-2 2v9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span class="ca__copy-text">Copy</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="hero__fixture">
+      <!-- The faucet itself. Drawn as one SVG so the brass, the valve and the
+           spout stay pixel-locked at any size; the water is on the canvas behind. -->
+      <svg class="faucet" viewBox="0 0 420 520" role="img" aria-label="A brass faucet dripping into a measuring tank">
+        <defs>
+          <linearGradient id="brass" x1="0" y1="0" x2="1" y2="0.6">
+            <stop offset="0"    stop-color="#7b4a1f"/>
+            <stop offset="0.18" stop-color="#e7b986"/>
+            <stop offset="0.34" stop-color="#fbe3c2"/>
+            <stop offset="0.5"  stop-color="#c9863f"/>
+            <stop offset="0.72" stop-color="#8c5527"/>
+            <stop offset="0.88" stop-color="#d8a163"/>
+            <stop offset="1"    stop-color="#5e3616"/>
+          </linearGradient>
+          <linearGradient id="brassV" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0"    stop-color="#f4d5ae"/>
+            <stop offset="0.35" stop-color="#c1823d"/>
+            <stop offset="1"    stop-color="#6b3d18"/>
+          </linearGradient>
+          <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0"   stop-color="#ffffff" stop-opacity="0.18"/>
+            <stop offset="0.2" stop-color="#ffffff" stop-opacity="0.04"/>
+            <stop offset="0.8" stop-color="#ffffff" stop-opacity="0.04"/>
+            <stop offset="1"   stop-color="#ffffff" stop-opacity="0.16"/>
+          </linearGradient>
+          <linearGradient id="waterFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0"   stop-color="#7bffc0"/>
+            <stop offset="0.4" stop-color="#00e07a"/>
+            <stop offset="1"   stop-color="#007f45"/>
+          </linearGradient>
+          <radialGradient id="spoutGlow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#00e07a" stop-opacity="0.75"/>
+            <stop offset="1" stop-color="#00e07a" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="9" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- wall plate -->
+        <g class="faucet__wall">
+          <rect x="6" y="86" width="58" height="120" rx="14" fill="url(#brassV)" opacity=".92"/>
+          <rect x="14" y="96" width="42" height="100" rx="10" fill="#0a1113" opacity=".5"/>
+          <circle cx="35" cy="112" r="4" fill="#f6dcb6" opacity=".7"/>
+          <circle cx="35" cy="180" r="4" fill="#f6dcb6" opacity=".7"/>
+        </g>
+
+        <!-- supply run -->
+        <rect x="52" y="128" width="150" height="36" rx="8" fill="url(#brass)"/>
+        <rect x="92" y="122" width="20" height="48" rx="5" fill="url(#brassV)"/>
+        <rect x="150" y="122" width="20" height="48" rx="5" fill="url(#brassV)"/>
+
+        <!-- riser + body -->
+        <rect x="186" y="128" width="46" height="176" rx="10" fill="url(#brass)"/>
+        <rect x="178" y="150" width="62" height="22" rx="7" fill="url(#brassV)"/>
+        <rect x="178" y="268" width="62" height="24" rx="8" fill="url(#brassV)"/>
+
+        <!-- spout: out, then a fat radius down -->
+        <path d="M209 292 v34 a56 56 0 0 0 56 56 h44" stroke="url(#brass)" stroke-width="42"
+              fill="none" stroke-linecap="round"/>
+        <path d="M209 292 v34 a56 56 0 0 0 56 56 h44" stroke="#fbe3c2" stroke-width="6"
+              fill="none" stroke-linecap="round" opacity=".35"/>
+
+        <!-- aerator -->
+        <g class="faucet__aerator">
+          <rect x="300" y="358" width="42" height="40" rx="9" fill="url(#brassV)"/>
+          <rect x="304" y="390" width="34" height="12" rx="5" fill="#3a2210"/>
+          <circle cx="321" cy="404" r="26" fill="url(#spoutGlow)" class="faucet__spoutGlow"/>
+        </g>
+
+        <!-- valve handle: rotated by JS as the user drags -->
+        <g class="faucet__valve" id="valveHandle" tabindex="0" role="slider"
+           aria-label="Flow rate" aria-valuemin="0" aria-valuemax="100" aria-valuenow="72">
+          <circle cx="209" cy="112" r="46" fill="none" stroke="#0a1113" stroke-width="2" opacity=".6"/>
+          <g class="faucet__valveSpin">
+            <rect x="199" y="60" width="20" height="104" rx="9" fill="url(#brassV)"/>
+            <rect x="157" y="102" width="104" height="20" rx="9" fill="url(#brass)"/>
+            <circle cx="209" cy="112" r="17" fill="url(#brassV)"/>
+            <circle cx="209" cy="112" r="7" fill="#3a2210"/>
+          </g>
+          <circle cx="209" cy="112" r="52" fill="transparent" class="faucet__valveHit"/>
+        </g>
+
+        <!-- measuring tank -->
+        <g class="tank">
+          <rect x="238" y="418" width="150" height="92" rx="12" fill="#04090b" opacity=".85"/>
+          <clipPath id="tankClip"><rect x="238" y="418" width="150" height="92" rx="12"/></clipPath>
+          <g clip-path="url(#tankClip)">
+            <rect id="tankWater" x="238" y="510" width="150" height="0" fill="url(#waterFill)" opacity=".9"/>
+            <path id="tankSurface" d="M238 510 h150" stroke="#a8ffd4" stroke-width="3" opacity=".85"/>
+          </g>
+          <rect x="238" y="418" width="150" height="92" rx="12" fill="url(#glass)" stroke="#1e2c2a" stroke-width="2"/>
+          <g class="tank__ticks" stroke="#7e9490" stroke-width="1.5" opacity=".55">
+            <path d="M248 442 h14"/><path d="M248 464 h20"/><path d="M248 486 h14"/>
+          </g>
+        </g>
+      </svg>
+
+      <div class="fixture__readout" role="status" aria-live="polite">
+        <span class="fixture__readout-label">Flow</span>
+        <span class="fixture__readout-value" id="flowReadout">72%</span>
+        <span class="fixture__readout-hint">drag the handle</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <ul class="stats" id="stats">
+      <li class="stat">
+        <span class="stat__label">Fees recycled</span>
+        <span class="stat__value"><span data-count data-bind="totals.recycledNum">0</span> <em>SOL</em></span>
+        <span class="stat__note">100% of everything collected</span>
+      </li>
+      <li class="stat">
+        <span class="stat__label">Dripped to holders</span>
+        <span class="stat__value"><span data-count data-bind="totals.drippedNum">0</span> <em>SOL</em></span>
+        <span class="stat__note"><span data-bind="totals.recipients">0</span> wallets paid</span>
+      </li>
+      <li class="stat">
+        <span class="stat__label">Bought &amp; burned</span>
+        <span class="stat__value"><span data-count data-bind="totals.burnedNum">0</span> <em>SOL</em></span>
+        <span class="stat__note">supply only goes one way</span>
+      </li>
+      <li class="stat">
+        <span class="stat__label">Epochs settled</span>
+        <span class="stat__value"><span data-count data-bind="totals.epochs">0</span></span>
+        <span class="stat__note">every one auditable below</span>
+      </li>
+    </ul>
+    <p class="stats__source" id="statsSource">Reading <code>site/data/faucet.json</code>, written by the engine.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ THE LOOP ═════════════════════════════════════ -->
+<section class="section section--loop" id="loop">
+  <div class="shell">
+    <header class="section__head">
+      <p class="section__kicker"><span class="pipe-tick" aria-hidden="true"></span>01 &mdash; Plumbing</p>
+      <h2 class="section__title">One inlet manifold. <span class="ink-water">Four outlets.</span> No hidden taps.</h2>
+      <p class="section__lede">
+        Fees arrive from two places. They land in one manifold, and the manifold has exactly four
+        ways out — all of them pointing back inside. There is no fifth pipe, and the engine will
+        not settle an epoch unless the four add up to 100.00%.
+      </p>
+    </header>
+
+    <div class="loop">
+      <div class="loop__canvas">
+        <svg class="flow" id="flowDiagram" viewBox="0 0 1360 620" role="img"
+             aria-label="Fee routing diagram: Pons creator fees and LP trading fees flow into the Faucet manifold, which splits into buyback and burn, holder drip, liquidity, and build fund.">
+          <defs>
+            <linearGradient id="pipeSkin" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0"    stop-color="#e2b17c"/>
+              <stop offset="0.32" stop-color="#b87333"/>
+              <stop offset="0.62" stop-color="#7a4720"/>
+              <stop offset="1"    stop-color="#4a2a12"/>
+            </linearGradient>
+            <linearGradient id="manifoldSkin" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0"   stop-color="#1b2a27"/>
+              <stop offset="0.5" stop-color="#0d1614"/>
+              <stop offset="1"   stop-color="#050b0a"/>
+            </linearGradient>
+            <filter id="flowGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="6" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- ── pipe casings ── -->
+          <g class="flow__casing" fill="none" stroke="url(#pipeSkin)" stroke-width="26" stroke-linecap="round">
+            <path d="M70 150 H360 C420 150 430 205 430 260 H470"/>
+            <path d="M70 470 H360 C420 470 430 415 430 360 H470"/>
+            <path d="M670 250 H740 C800 250 800 90 860 90 H880"/>
+            <path d="M670 285 H760 C810 285 810 230 860 230 H880"/>
+            <path d="M670 335 H760 C810 335 810 390 860 390 H880"/>
+            <path d="M670 370 H740 C800 370 800 530 860 530 H880"/>
+          </g>
+
+          <!-- ── inner bore: the dark channel the water runs through ── -->
+          <g class="flow__bore" fill="none" stroke="#040a09" stroke-width="15" stroke-linecap="round">
+            <path d="M70 150 H360 C420 150 430 205 430 260 H470"/>
+            <path d="M70 470 H360 C420 470 430 415 430 360 H470"/>
+            <path d="M670 250 H740 C800 250 800 90 860 90 H880"/>
+            <path d="M670 285 H760 C810 285 810 230 860 230 H880"/>
+            <path d="M670 335 H760 C810 335 810 390 860 390 H880"/>
+            <path d="M670 370 H740 C800 370 800 530 860 530 H880"/>
+          </g>
+
+          <!-- ── the water: dashed strokes animated by stroke-dashoffset ── -->
+          <g class="flow__water" fill="none" stroke="var(--water)" stroke-width="9"
+             stroke-linecap="round" filter="url(#flowGlow)">
+            <path class="flow__stream" d="M70 150 H360 C420 150 430 205 430 260 H470"/>
+            <path class="flow__stream" d="M70 470 H360 C420 470 430 415 430 360 H470"/>
+            <path class="flow__stream flow__stream--out" data-bucket="buyback"   d="M670 250 H740 C800 250 800 90 860 90 H880"/>
+            <path class="flow__stream flow__stream--out" data-bucket="drip"      d="M670 285 H760 C810 285 810 230 860 230 H880"/>
+            <path class="flow__stream flow__stream--out" data-bucket="liquidity" d="M670 335 H760 C810 335 810 390 860 390 H880"/>
+            <path class="flow__stream flow__stream--out" data-bucket="treasury"  d="M670 370 H740 C800 370 800 530 860 530 H880"/>
+          </g>
+
+          <!-- ── couplings ── -->
+          <g class="flow__couplings" fill="url(#pipeSkin)">
+            <rect x="196" y="132" width="22" height="36" rx="6"/>
+            <rect x="196" y="452" width="22" height="36" rx="6"/>
+            <rect x="770" y="72"  width="22" height="36" rx="6"/>
+            <rect x="770" y="212" width="22" height="36" rx="6"/>
+            <rect x="770" y="372" width="22" height="36" rx="6"/>
+            <rect x="770" y="512" width="22" height="36" rx="6"/>
+          </g>
+
+          <!-- ── inlets ── -->
+          <g class="flow__label flow__label--in">
+            <text x="70" y="100" class="flow__title">Pons creator fees</text>
+            <text x="70" y="122" class="flow__sub">every trade routed through the launch</text>
+            <text x="70" y="420" class="flow__title">LP trading fees</text>
+            <text x="70" y="442" class="flow__sub">the pool&#39;s own cut, swept each epoch</text>
+          </g>
+
+          <!-- ── the manifold ── -->
+          <g class="flow__manifold" id="manifoldNode">
+            <rect x="466" y="206" width="208" height="208" rx="26" fill="url(#manifoldSkin)"
+                  stroke="var(--water-dim)" stroke-width="2"/>
+            <rect x="480" y="220" width="180" height="180" rx="18" fill="none"
+                  stroke="#1d2b29" stroke-width="1.5"/>
+            <circle cx="570" cy="286" r="30" fill="none" stroke="var(--water)" stroke-width="2" opacity=".55"
+                    class="flow__pulse"/>
+            <path d="M556 274 h28 v10 a14 14 0 0 1-14 14 14 14 0 0 1-14-14z" fill="var(--water)" opacity=".9"/>
+            <text x="570" y="348" class="flow__manifoldTitle" text-anchor="middle">THE FAUCET</text>
+            <text x="570" y="372" class="flow__sub" text-anchor="middle">collect &rarr; route &rarr; prove</text>
+          </g>
+
+          <!-- ── outlets ── -->
+          <g class="flow__outlets">
+            <g class="flow__outlet" data-bucket="buyback">
+              <text x="900" y="82"  class="flow__title">Buyback &amp; Burn</text>
+              <text x="900" y="106" class="flow__pct" data-bind="policy.buyback.pct">35.00%</text>
+              <text x="900" y="128" class="flow__sub">bought on market, sent to the burn address</text>
+            </g>
+            <g class="flow__outlet" data-bucket="drip">
+              <text x="900" y="222" class="flow__title">Holder Drip</text>
+              <text x="900" y="246" class="flow__pct" data-bind="policy.drip.pct">35.00%</text>
+              <text x="900" y="268" class="flow__sub">split by time-weighted balance, claimable</text>
+            </g>
+            <g class="flow__outlet" data-bucket="liquidity">
+              <text x="900" y="382" class="flow__title">Liquidity Deepening</text>
+              <text x="900" y="406" class="flow__pct" data-bind="policy.liquidity.pct">20.00%</text>
+              <text x="900" y="428" class="flow__sub">protocol-owned, never withdrawn</text>
+            </g>
+            <g class="flow__outlet" data-bucket="treasury">
+              <text x="900" y="522" class="flow__title">Build Fund</text>
+              <text x="900" y="546" class="flow__pct" data-bind="policy.treasury.pct">10.00%</text>
+              <text x="900" y="568" class="flow__sub">tooling, audits, integrations &mdash; published</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <aside class="loop__panel">
+        <h3 class="loop__panelTitle">Pressure test</h3>
+        <p class="loop__panelText">
+          Move the slider to send a different amount through the manifold. The four outlets always
+          add up to what came in — that is the only thing this engine is allowed to do.
+        </p>
+
+        <label class="slider" for="throughput">
+          <span class="slider__label">Fees this epoch</span>
+          <span class="slider__value"><span id="throughputValue">12.40</span> SOL</span>
+          <input type="range" id="throughput" min="0.05" max="120" step="0.05" value="12.4" />
+        </label>
+
+        <ul class="loop__outputs" id="loopOutputs">
+          <li data-bucket="buyback"><span class="dot"></span><span class="k">Buyback &amp; Burn</span><span class="v">4.34</span></li>
+          <li data-bucket="drip"><span class="dot"></span><span class="k">Holder Drip</span><span class="v">4.34</span></li>
+          <li data-bucket="liquidity"><span class="dot"></span><span class="k">Liquidity</span><span class="v">2.48</span></li>
+          <li data-bucket="treasury"><span class="dot"></span><span class="k">Build Fund</span><span class="v">1.24</span></li>
+        </ul>
+
+        <p class="loop__checksum" id="loopChecksum">
+          <span class="loop__checksumOk" aria-hidden="true"></span>
+          Balanced: <strong>12.40</strong> in, <strong>12.40</strong> out.
+        </p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ THE SPLIT ════════════════════════════════════ -->
+<section class="section section--split" id="split">
+  <div class="shell">
+    <header class="section__head">
+      <p class="section__kicker"><span class="pipe-tick" aria-hidden="true"></span>02 &mdash; The Split</p>
+      <h2 class="section__title">Four gauges. <span class="ink-water">Read them yourself.</span></h2>
+      <p class="section__lede">
+        These numbers live in one file — <code>engine/src/config.ts</code> — and both this page and
+        the settlement engine read the same one. If the split changes, it changes here, in the
+        commit history, and in the next epoch's receipt at the same moment.
+      </p>
+    </header>
+
+    <div class="gauges" id="gauges">
+      <article class="gauge-card" data-bucket="buyback">
+        <div class="gauge" data-value="35" data-max="50">
+          <svg viewBox="0 0 200 130" aria-hidden="true">
+            <path class="gauge__track" d="M22 116 A78 78 0 0 1 178 116" fill="none" stroke-width="14" stroke-linecap="round"/>
+            <path class="gauge__fill"  d="M22 116 A78 78 0 0 1 178 116" fill="none" stroke-width="14" stroke-linecap="round"/>
+            <g class="gauge__needle"><path d="M100 116 L100 46" stroke-width="4" stroke-linecap="round"/></g>
+            <circle class="gauge__hub" cx="100" cy="116" r="9"/>
+          </svg>
+          <span class="gauge__readout" data-bind="policy.buyback.pct">35.00%</span>
+        </div>
+        <h3>Buyback &amp; Burn</h3>
+        <p>Fees are spent buying <span data-bind="project.tickerTag">$ROBIN</span> on the open market, and every token bought goes to the burn address. Sell pressure funds its own opposite.</p>
+        <ul class="gauge-card__facts">
+          <li><span>Destination</span><strong>Burn address</strong></li>
+          <li><span>Reversible</span><strong>No</strong></li>
+        </ul>
+      </article>
+
+      <article class="gauge-card" data-bucket="drip">
+        <div class="gauge" data-value="35" data-max="50">
+          <svg viewBox="0 0 200 130" aria-hidden="true">
+            <path class="gauge__track" d="M22 116 A78 78 0 0 1 178 116" fill="none" stroke-width="14" stroke-linecap="round"/>
+            <path class="gauge__fill"  d="M22 116 A78 78 0 0 1 178 116" fill="none" stroke-width="14" stroke-linecap="round"/>
+            <g class="gauge__needle"><path d="M100 116 L100 46" stroke-width="4" stroke-linecap="round"/></g>
+            <circle class="gauge__hub" cx="100" cy="116" r="9"/>
+          </svg>
+          <span class="gauge__readout" data-bind="policy.drip.pct">35.00%</span>
+        </div>
+        <h3>Holder Drip</h3>
+        <p>Split across eligible holders by <strong>time-weighted</strong> balance, not by a snapshot. Buying one slot before the cut-off earns you almost nothing; holding the whole epoch earns you all of it.</p>
+        <ul class="gauge-card__facts">
+          <li><span>Weighting</span><strong>Time-weighted</strong></li>
+          <li><span>Claim</span><strong>Merkle proof</strong></li>
+        </ul>
+      </article>
+
+      <article class="gauge-card" data-bucket="liquidity">
+        <div class="gauge" data-value="20" data-max="50">
+          <svg viewBox="0 0 200 130" aria-hidden="true">
+            <path class="gauge__track" d="M22 116 A78 78 0 0 1 178 116" fill="none" stroke-width="14" stroke-linecap="round"/>
+            <path class="gauge__fill"  d="M22 116 A78 78 0 0 1 178 116" fill="none" stroke-width="14" stroke-linecap="round"/>
+            <g class="gauge__needle"><path d="M100 116 L100 46" stroke-width="4" stroke-linecap="round"/></g>
+            <circle class="gauge__hub" cx="100" cy="116" r="9"/>
+          </svg>
+          <span class="gauge__readout" data-bind="policy.liquidity.pct">20.00%</span>
+        </div>
+        <h3>Liquidity Deepening</h3>
+        <p>Paired and added to the pool as protocol-owned liquidity. The LP tokens are not held by a person, so there is no wallet that can pull them. Depth only ratchets up.</p>
+        <ul class="gauge-card__facts">
+          <li><span>Owner</span><strong>Protocol</strong></li>
+          <li><span>Withdrawable</span><strong>No</strong></li>
+        </ul>
+      </article>
+
+      <article class="gauge-card" data-bucket="treasury">
+        <div class="gauge" data-value="10" data-max="50">
+          <svg viewBox="0 0 200 130" aria-hidden="true">
+            <path class="gauge__track" d="M22 116 A78 78 0 0 1 178 116" fill="none" stroke-width="14" stroke-linecap="round"/>
+            <path class="gauge__fill"  d="M22 116 A78 78 0 0 1 178 116" fill="none" stroke-width="14" stroke-linecap="round"/>
+            <g class="gauge__needle"><path d="M100 116 L100 46" stroke-width="4" stroke-linecap="round"/></g>
+            <circle class="gauge__hub" cx="100" cy="116" r="9"/>
+          </svg>
+          <span class="gauge__readout" data-bind="policy.treasury.pct">10.00%</span>
+        </div>
+        <h3>Build Fund</h3>
+        <p>The only bucket that pays for work: RPC, indexing, audits, integrations. It is an on-chain account, and every spend is listed in that epoch's receipt with what it bought.</p>
+        <ul class="gauge-card__facts">
+          <li><span>Custody</span><strong>On-chain treasury</strong></li>
+          <li><span>Spends</span><strong>Published per epoch</strong></li>
+        </ul>
+      </article>
+    </div>
+
+    <p class="split__seal">
+      <span class="split__sealIcon" aria-hidden="true"></span>
+      <strong>35 + 35 + 20 + 10 = 100.</strong>
+      <span>The engine calls <code>assertPolicyBalanced()</code> before every single cycle, and throws rather than settle a policy that leaks a basis point.</span>
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ PROOF ════════════════════════════════════════ -->
+<section class="section section--proof" id="proof">
+  <div class="shell">
+    <header class="section__head">
+      <p class="section__kicker"><span class="pipe-tick" aria-hidden="true"></span>03 &mdash; Proof</p>
+      <h2 class="section__title">"Trust me" is <span class="ink-water">not a mechanism.</span></h2>
+      <p class="section__lede">
+        Every epoch publishes a Merkle root over the claim set. Anyone can rebuild the tree from the
+        published claim file, check that the root matches, and check that their own drip is in it —
+        without asking us for anything.
+      </p>
+    </header>
+
+    <div class="proof">
+      <ol class="proof__steps">
+        <li class="proof__step">
+          <span class="proof__num">1</span>
+          <h3>Collect</h3>
+          <p>Adapters read the fee vaults and record every finalized credit inside the epoch's slot window. Adapters can only observe — they hold no keys and can move nothing.</p>
+        </li>
+        <li class="proof__step">
+          <span class="proof__num">2</span>
+          <h3>Route</h3>
+          <p>The total is split by the policy using largest-remainder allocation, so the four buckets sum to the input <em>exactly</em>. No lamport is lost to integer division.</p>
+        </li>
+        <li class="proof__step">
+          <span class="proof__num">3</span>
+          <h3>Weigh</h3>
+          <p>Holder balances are integrated across the epoch — balance multiplied by slots held. A one-slot borrow earns a one-slot share.</p>
+        </li>
+        <li class="proof__step">
+          <span class="proof__num">4</span>
+          <h3>Prove</h3>
+          <p>Claims are hashed into a Merkle tree with domain-separated leaves, and the root is published. Your proof is a handful of hashes; verifying it is a loop, not an API call.</p>
+        </li>
+      </ol>
+
+      <div class="terminal" role="img" aria-label="Terminal output of the faucet verify command showing a valid proof">
+        <div class="terminal__bar">
+          <span class="terminal__dot"></span><span class="terminal__dot"></span><span class="terminal__dot"></span>
+          <span class="terminal__name">faucet &mdash; verify</span>
+        </div>
+        <pre class="terminal__body"><code><span class="t-dim">$</span> <span class="t-cmd">faucet</span> verify out/claims/epoch-3.json <span class="t-str">Hood042…</span>
+
+  <span class="t-ok">proof valid</span>
+  owner  Hood042xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  index  42
+  amount 0.0006 SOL
+  proof  7 node(s)
+  root   <span class="t-hash">0x168163ee52ae9bf84eec35874632371dc…</span>
+
+<span class="t-dim">$</span> <span class="t-cmd">faucet</span> policy
+
+  <span class="t-ok">100.00% of collected fees are routed back into the project.</span></code></pre>
+      </div>
+    </div>
+
+    <div class="proof__notes">
+      <article class="note">
+        <h4>Domain-separated leaves</h4>
+        <p>Leaf hashes are prefixed <code>0x00</code>, internal nodes <code>0x01</code>. Without that, a 64-byte "leaf" can be replayed as an internal node and a proof forged for a claim that was never allocated.</p>
+      </article>
+      <article class="note">
+        <h4>No duplicated orphans</h4>
+        <p>An odd node at a level is promoted, never paired with itself. Self-pairing lets one proof validate two different indices — a classic way to claim twice.</p>
+      </article>
+      <article class="note">
+        <h4>Indexed claims</h4>
+        <p>The claim index is inside the leaf hash, so a claim contract can mark index <em>n</em> spent in a bitmap and be certain no second leaf shares it.</p>
+      </article>
+      <article class="note">
+        <h4>Dust is carried, never kept</h4>
+        <p>Anything the drip can't divide evenly rolls into the next epoch's collected total. It is not burned by rounding and it is not quietly retained.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ LEDGER ═══════════════════════════════════════ -->
+<section class="section section--ledger" id="ledger">
+  <div class="shell">
+    <header class="section__head">
+      <p class="section__kicker"><span class="pipe-tick" aria-hidden="true"></span>04 &mdash; Ledger</p>
+      <h2 class="section__title">Every epoch, <span class="ink-water">on the record.</span></h2>
+      <p class="section__lede">
+        One row per settlement. Collected, split four ways, root published. Rows below are generated
+        by the engine into <code>site/data/faucet.json</code> — the page has no server to lie to you with.
+      </p>
+    </header>
+
+    <div class="ledger">
+      <div class="ledger__scroll">
+        <table class="ledger__table">
+          <caption class="visually-hidden">Settled epochs with collected fees, per-bucket allocation, drip recipients and Merkle root</caption>
+          <thead>
+            <tr>
+              <th scope="col">Epoch</th>
+              <th scope="col">Collected</th>
+              <th scope="col">Burned</th>
+              <th scope="col">Dripped</th>
+              <th scope="col">Liquidity</th>
+              <th scope="col">Build</th>
+              <th scope="col">Wallets</th>
+              <th scope="col">Merkle root</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody">
+            <tr class="ledger__empty"><td colspan="8">Loading epochs&hellip;</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="ledger__foot" id="ledgerFoot"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ BUILD ════════════════════════════════════════ -->
+<section class="section section--build" id="build">
+  <div class="shell">
+    <header class="section__head">
+      <p class="section__kicker"><span class="pipe-tick" aria-hidden="true"></span>05 &mdash; The Run</p>
+      <h2 class="section__title">Laid out like <span class="ink-water">a pipe run.</span></h2>
+      <p class="section__lede">
+        Each valve opens when the one before it is proven, not when a date arrives.
+      </p>
+    </header>
+
+    <ol class="run">
+      <li class="run__stage run__stage--done">
+        <span class="run__valve" aria-hidden="true"></span>
+        <div class="run__body">
+          <h3>Manifold built <span class="run__tag">shipped</span></h3>
+          <p>Collect / route / distribute engine, largest-remainder allocation, Merkle claims, conservation assertions, and a test suite that tries to make it leak.</p>
+        </div>
+      </li>
+      <li class="run__stage run__stage--done">
+        <span class="run__valve" aria-hidden="true"></span>
+        <div class="run__body">
+          <h3>Dry runs against synthetic epochs <span class="run__tag">shipped</span></h3>
+          <p><code>faucet cycle --epochs 6</code> settles a full multi-epoch run with carry-forward, and every epoch passes the conservation check.</p>
+        </div>
+      </li>
+      <li class="run__stage run__stage--live">
+        <span class="run__valve" aria-hidden="true"></span>
+        <div class="run__body">
+          <h3>Launch on Pons <span class="run__tag run__tag--live">next</span></h3>
+          <p>Mint, set the creator fee vault, point the adapters at it. <code>faucet doctor</code> has to come back clean before the first live cycle runs.</p>
+        </div>
+      </li>
+      <li class="run__stage">
+        <span class="run__valve" aria-hidden="true"></span>
+        <div class="run__body">
+          <h3>Claim front-end</h3>
+          <p>Connect a wallet, the page fetches your proof from the published claim file and submits it. No backend, no allowlist, no form.</p>
+        </div>
+      </li>
+      <li class="run__stage">
+        <span class="run__valve" aria-hidden="true"></span>
+        <div class="run__body">
+          <h3>Time-weighted index</h3>
+          <p>Replace the largest-holders floor with a streamed balance index so weighting covers every wallet, not just the top accounts.</p>
+        </div>
+      </li>
+      <li class="run__stage">
+        <span class="run__valve" aria-hidden="true"></span>
+        <div class="run__body">
+          <h3>Hand over the wheel</h3>
+          <p>Move the routing policy on-chain so changing the split requires a transaction anyone can see coming, not a commit.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ FAQ ══════════════════════════════════════════ -->
+<section class="section section--faq" id="faq">
+  <div class="shell shell--narrow">
+    <header class="section__head">
+      <p class="section__kicker"><span class="pipe-tick" aria-hidden="true"></span>06 &mdash; Service panel</p>
+      <h2 class="section__title">Questions, <span class="ink-water">answered plainly.</span></h2>
+    </header>
+
+    <div class="faq">
+      <details class="faq__item" open>
+        <summary><span class="faq__valve" aria-hidden="true"></span>Does "all fees go back into the project" really mean all of them?</summary>
+        <div class="faq__body"><p>It means every basis point of collected fees is routed to one of four destinations that the project or its holders own: the burn address, the holder drip, protocol-owned liquidity, and an on-chain build fund. There is no team bucket and no outbound wallet that isn't named on this page. Network transaction fees paid to validators to <em>make</em> those transfers are unavoidable and come out of the build fund.</p></div>
+      </details>
+
+      <details class="faq__item">
+        <summary><span class="faq__valve" aria-hidden="true"></span>What stops the split from being changed quietly?</summary>
+        <div class="faq__body"><p>Right now: the split lives in a single committed file, and this page renders the same numbers the engine settles with, so a change shows up in both places at once and in the commit history. That is honest but it is still a commit. The last item on the run is moving the policy on-chain so a change costs a visible transaction instead.</p></div>
+      </details>
+
+      <details class="faq__item">
+        <summary><span class="faq__valve" aria-hidden="true"></span>Why time-weighted balances instead of a snapshot?</summary>
+        <div class="faq__body"><p>Snapshots are trivially gamed. Borrow a large balance, hold it for one slot across the snapshot, claim, repay. Integrating the balance over the whole epoch makes that attack cost the full epoch instead of one slot, which is the point.</p></div>
+      </details>
+
+      <details class="faq__item">
+        <summary><span class="faq__valve" aria-hidden="true"></span>What happens in an epoch with barely any volume?</summary>
+        <div class="faq__body"><p>Nothing settles. If the collected total is under the settle floor, spending 0.005 SOL in transaction fees to move 0.002 SOL is a net loss, so the whole amount is carried into the next epoch and the receipt records it as carried rather than spent.</p></div>
+      </details>
+
+      <details class="faq__item">
+        <summary><span class="faq__valve" aria-hidden="true"></span>Is the drip automatic or do I have to claim?</summary>
+        <div class="faq__body"><p>You claim. A push distribution to thousands of accounts costs more in transaction fees than most drips are worth, and it fails on accounts that can't receive. A Merkle claim means the cost falls on whoever wants the money, when they want it, and unclaimed drips stay claimable rather than expiring.</p></div>
+      </details>
+
+      <details class="faq__item">
+        <summary><span class="faq__valve" aria-hidden="true"></span>What is actually live right now?</summary>
+        <div class="faq__body"><p>The engine is real, tested and runs end to end; the numbers on this page come from synthetic epochs generated by deterministic mock fee sources, because the token has not launched yet. The moment the mint and fee vault addresses go into the config, the same code runs against real vaults and this page renders real epochs. The ledger below labels its source either way.</p></div>
+      </details>
+
+      <details class="faq__item">
+        <summary><span class="faq__valve" aria-hidden="true"></span>Is this financial advice?</summary>
+        <div class="faq__body"><p>No. It's plumbing. This is an experimental crypto project with no promise of return, no guarantee of liquidity, and a real chance of going to zero — that risk is not removed by any of the mechanics on this page. Nothing here is investment advice or an offer of anything. Read the code before you touch it.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ CTA ══════════════════════════════════════════ -->
+<section class="cta">
+  <div class="shell cta__inner">
+    <div class="cta__drips" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <h2>The tap is pointed <span class="ink-water">back inside.</span></h2>
+    <p>Read the engine, run a cycle yourself, then decide.</p>
+    <div class="cta__actions">
+      <a class="btn btn--primary" href="https://github.com/frieshimself-cpu/Faucet" rel="noopener">Read the code</a>
+      <a class="btn btn--ghost" href="#ledger">Check the ledger</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="shell footer__inner">
+    <div class="footer__brand">
+      <strong data-bind="project.name">Robinhood</strong>
+      <span data-bind="project.tagline">Every fee drips back to the people it came from.</span>
+    </div>
+    <nav class="footer__links" aria-label="Footer">
+      <a href="#loop">The Loop</a>
+      <a href="#split">The Split</a>
+      <a href="#proof">Proof</a>
+      <a href="#ledger">Ledger</a>
+      <a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener">GitHub</a>
+    </nav>
+    <p class="footer__legal">
+      Experimental software and an experimental token. No promise of value, liquidity, or return.
+      Not financial advice. Verify everything on-chain before you act on it.
+      <span class="footer__gen" id="footerGenerated"></span>
+    </p>
+  </div>
+</footer>
+
+<script src="scripts/data.js"></script>
+<script src="scripts/water.js"></script>
+<script src="scripts/flow.js"></script>
+<script src="scripts/main.js"></script>
+</body>
+</html>

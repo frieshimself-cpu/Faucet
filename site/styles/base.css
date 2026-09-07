@@ -1,0 +1,263 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   base — tokens, reset, typography, layout shell, buttons
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Ground: a wet, near-black slate with a green cast, so copper reads warm
+     against it and the "water" green reads as light rather than paint. */
+  --void:        #04080a;
+  --slate:       #070d0f;
+  --panel:       #0a1214;
+  --panel-lift:  #0e181a;
+  --line:        #172422;
+  --line-soft:   #101a19;
+
+  /* Copper and brass, for anything shaped like plumbing. */
+  --copper:      #b87333;
+  --copper-lit:  #e7b986;
+  --copper-pale: #fbe3c2;
+  --copper-deep: #6b3d18;
+
+  /* The water. Robinhood green, pushed bright enough to glow on black. */
+  --water:        #00e07a;
+  --water-bright: #7bffc0;
+  --water-deep:   #007f45;
+  --water-dim:    rgba(0, 224, 122, 0.34);
+  --water-wash:   rgba(0, 224, 122, 0.08);
+
+  --text:      #dde8e4;
+  --text-soft: #a9bcb7;
+  --muted:     #748b86;
+
+  --radius-sm: 8px;
+  --radius:    14px;
+  --radius-lg: 22px;
+
+  --shell:  1240px;
+  --gutter: clamp(1.25rem, 4vw, 2.75rem);
+
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-fluid: cubic-bezier(0.4, 0.05, 0.2, 1);
+
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+* { margin: 0; }
+
+html {
+  scroll-behavior: smooth;
+  /* The sticky pipe-rail is 72px; don't let anchors land underneath it. */
+  scroll-padding-top: 96px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.075rem);
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* A faint horizontal banding, like light on wet metal. */
+  background-image:
+    radial-gradient(1200px 600px at 78% -8%, rgba(0, 224, 122, 0.07), transparent 65%),
+    radial-gradient(900px 520px at 4% 12%, rgba(184, 115, 51, 0.06), transparent 62%);
+  background-attachment: fixed;
+}
+
+img, svg, canvas { display: block; max-width: 100%; }
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+
+p { text-wrap: pretty; }
+
+a { color: inherit; text-decoration: none; }
+
+code, pre, .mono { font-family: var(--font-mono); font-size: 0.9em; }
+
+code {
+  color: var(--water-bright);
+  background: var(--water-wash);
+  border: 1px solid rgba(0, 224, 122, 0.16);
+  border-radius: 5px;
+  padding: 0.08em 0.36em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--water);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection { background: rgba(0, 224, 122, 0.28); color: #eafff5; }
+
+/* ── layout ──────────────────────────────────────────────────────────────── */
+
+.shell {
+  width: 100%;
+  max-width: var(--shell);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.shell--narrow { max-width: 860px; }
+
+.section { padding-block: clamp(4.5rem, 9vw, 8.5rem); position: relative; }
+
+.section__head { max-width: 720px; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+
+.section__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1.15rem;
+}
+
+.pipe-tick {
+  width: 26px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--copper-lit), var(--copper-deep));
+  box-shadow: 0 0 12px rgba(184, 115, 51, 0.5);
+}
+
+.section__title {
+  font-size: clamp(2rem, 1.3rem + 3vw, 3.4rem);
+  margin-bottom: 1.15rem;
+}
+
+.section__lede {
+  color: var(--text-soft);
+  font-size: clamp(1.02rem, 0.98rem + 0.28vw, 1.18rem);
+  max-width: 62ch;
+}
+
+.ink-water {
+  color: var(--water-bright);
+  text-shadow: 0 0 32px rgba(0, 224, 122, 0.35);
+}
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+
+.btn {
+  --btn-bg: transparent;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.62rem;
+  padding: 0.82rem 1.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--btn-bg);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    transform 0.28s var(--ease-out),
+    border-color 0.28s var(--ease-out),
+    box-shadow 0.28s var(--ease-out),
+    background 0.28s var(--ease-out);
+  white-space: nowrap;
+}
+
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+
+.btn--primary {
+  --btn-bg: linear-gradient(135deg, var(--water) 0%, #00b863 100%);
+  color: #02170d;
+  border-color: transparent;
+  box-shadow: 0 10px 34px -12px rgba(0, 224, 122, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.btn--primary:hover {
+  box-shadow: 0 16px 44px -12px rgba(0, 224, 122, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.btn--ghost {
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.btn--ghost:hover { border-color: var(--water-dim); box-shadow: 0 0 0 4px var(--water-wash); }
+
+/* A droplet that swells and falls on hover — the button "drips". */
+.btn__drip {
+  width: 9px;
+  height: 9px;
+  border-radius: 50% 50% 55% 55% / 60% 60% 45% 45%;
+  background: #02170d;
+  opacity: 0.75;
+}
+
+.btn--primary:hover .btn__drip { animation: btn-drip 1.1s var(--ease-fluid) infinite; }
+
+@keyframes btn-drip {
+  0%   { transform: translateY(-3px) scaleY(0.7); opacity: 0.5; }
+  45%  { transform: translateY(0) scaleY(1.15); opacity: 1; }
+  100% { transform: translateY(7px) scaleY(0.6); opacity: 0; }
+}
+
+/* ── utility ─────────────────────────────────────────────────────────────── */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 200;
+  background: var(--water);
+  color: #02170d;
+  padding: 0.7rem 1.1rem;
+  border-radius: 0 0 10px 10px;
+  font-weight: 700;
+  transition: top 0.2s var(--ease-out);
+}
+
+.skip-link:focus { top: 0; }
+
+/* Scroll-reveal. Elements start displaced and settle when observed. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.75s var(--ease-out), transform 0.75s var(--ease-out);
+}
+
+[data-reveal].is-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  [data-reveal] { opacity: 1; transform: none; }
+}

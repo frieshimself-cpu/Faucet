@@ -1,0 +1,434 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   data.js — the last-known-good dataset, baked in at build time.
+
+   The page prefers the live file at `data/faucet.json`, which the engine
+   rewrites on every cycle. This copy exists so the site still renders real
+   numbers when it is opened straight off disk (file:// blocks fetch) or when
+   the JSON has not been regenerated yet. Never hand-edit it: regenerate with
+   `npm run sync:fallback`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+window.FAUCET_FALLBACK = {
+  "generatedAt": "2026-09-07T16:44:30.693Z",
+  "project": {
+    "name": "Robinhood",
+    "ticker": "ROBIN",
+    "tagline": "Every fee drips back to the people it came from.",
+    "launchpad": "Pons",
+    "chain": "solana"
+  },
+  "mint": {
+    "address": null,
+    "symbol": "ROBIN",
+    "decimals": 6
+  },
+  "native": {
+    "address": null,
+    "symbol": "SOL",
+    "decimals": 9
+  },
+  "policy": [
+    {
+      "bucket": "buyback",
+      "label": "Buyback & Burn",
+      "bps": 3500,
+      "intent": "Market-buys the token with collected fees and burns what it buys. Supply only goes down."
+    },
+    {
+      "bucket": "drip",
+      "label": "Holder Drip",
+      "bps": 3500,
+      "intent": "Split across eligible holders by time-weighted balance, claimable from the faucet."
+    },
+    {
+      "bucket": "liquidity",
+      "label": "Liquidity Deepening",
+      "bps": 2000,
+      "intent": "Paired and added to the pool as protocol-owned liquidity. Never withdrawn."
+    },
+    {
+      "bucket": "treasury",
+      "label": "Build Fund",
+      "bps": 1000,
+      "intent": "On-chain treasury for tooling, audits, integrations. Spends are published per epoch."
+    }
+  ],
+  "totals": {
+    "epochs": 6,
+    "recycledRaw": "779985109",
+    "recycled": "0.7799",
+    "drippedRaw": "272994412",
+    "dripped": "0.2729",
+    "burnedRaw": "272994790",
+    "burned": "0.2729",
+    "recipients": 120
+  },
+  "epochs": [
+    {
+      "id": 1,
+      "window": {
+        "fromSlot": 249676000,
+        "toSlot": 249730000
+      },
+      "closedAt": "2026-09-07T16:44:30.682Z",
+      "settled": true,
+      "collectedRaw": "131739004",
+      "collected": "0.1317",
+      "allocations": [
+        {
+          "bucket": "buyback",
+          "label": "Buyback & Burn",
+          "bps": 3500,
+          "amountRaw": "46108652",
+          "amount": "0.0461"
+        },
+        {
+          "bucket": "drip",
+          "label": "Holder Drip",
+          "bps": 3500,
+          "amountRaw": "46108651",
+          "amount": "0.0461"
+        },
+        {
+          "bucket": "liquidity",
+          "label": "Liquidity Deepening",
+          "bps": 2000,
+          "amountRaw": "26347801",
+          "amount": "0.0263"
+        },
+        {
+          "bucket": "treasury",
+          "label": "Build Fund",
+          "bps": 1000,
+          "amountRaw": "13173900",
+          "amount": "0.0131"
+        }
+      ],
+      "drip": {
+        "recipients": 120,
+        "totalRaw": "46108587",
+        "total": "0.0461",
+        "root": "0x8f70f53d8f0ecff2f0ae5c69e03ab3065681ab0cae345a5651b4416140785458"
+      },
+      "sources": [
+        {
+          "kind": "pons-creator-fee",
+          "totalRaw": "45113794",
+          "total": "0.0451",
+          "receipts": 24
+        },
+        {
+          "kind": "lp-trading-fee",
+          "totalRaw": "86625210",
+          "total": "0.0866",
+          "receipts": 40
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "window": {
+        "fromSlot": 249730000,
+        "toSlot": 249784000
+      },
+      "closedAt": "2026-09-07T16:44:30.685Z",
+      "settled": true,
+      "collectedRaw": "129075170",
+      "collected": "0.129",
+      "allocations": [
+        {
+          "bucket": "buyback",
+          "label": "Buyback & Burn",
+          "bps": 3500,
+          "amountRaw": "45176310",
+          "amount": "0.0451"
+        },
+        {
+          "bucket": "drip",
+          "label": "Holder Drip",
+          "bps": 3500,
+          "amountRaw": "45176309",
+          "amount": "0.0451"
+        },
+        {
+          "bucket": "liquidity",
+          "label": "Liquidity Deepening",
+          "bps": 2000,
+          "amountRaw": "25815034",
+          "amount": "0.0258"
+        },
+        {
+          "bucket": "treasury",
+          "label": "Build Fund",
+          "bps": 1000,
+          "amountRaw": "12907517",
+          "amount": "0.0129"
+        }
+      ],
+      "drip": {
+        "recipients": 120,
+        "totalRaw": "45176249",
+        "total": "0.0451",
+        "root": "0x21afa6f9b6da8aa867f20a50d9ae611f7333f47b9f1842e90c4207c4cb6d80d8"
+      },
+      "sources": [
+        {
+          "kind": "pons-creator-fee",
+          "totalRaw": "49516035",
+          "total": "0.0495",
+          "receipts": 24
+        },
+        {
+          "kind": "lp-trading-fee",
+          "totalRaw": "79559071",
+          "total": "0.0795",
+          "receipts": 40
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "window": {
+        "fromSlot": 249784000,
+        "toSlot": 249838000
+      },
+      "closedAt": "2026-09-07T16:44:30.687Z",
+      "settled": true,
+      "collectedRaw": "128238138",
+      "collected": "0.1282",
+      "allocations": [
+        {
+          "bucket": "buyback",
+          "label": "Buyback & Burn",
+          "bps": 3500,
+          "amountRaw": "44883348",
+          "amount": "0.0448"
+        },
+        {
+          "bucket": "drip",
+          "label": "Holder Drip",
+          "bps": 3500,
+          "amountRaw": "44883348",
+          "amount": "0.0448"
+        },
+        {
+          "bucket": "liquidity",
+          "label": "Liquidity Deepening",
+          "bps": 2000,
+          "amountRaw": "25647628",
+          "amount": "0.0256"
+        },
+        {
+          "bucket": "treasury",
+          "label": "Build Fund",
+          "bps": 1000,
+          "amountRaw": "12823814",
+          "amount": "0.0128"
+        }
+      ],
+      "drip": {
+        "recipients": 120,
+        "totalRaw": "44883289",
+        "total": "0.0448",
+        "root": "0x168163ee52ae9bf84eec35874632371dc0d0600fb5b4213b5dd6b42eb2500468"
+      },
+      "sources": [
+        {
+          "kind": "pons-creator-fee",
+          "totalRaw": "55984480",
+          "total": "0.0559",
+          "receipts": 24
+        },
+        {
+          "kind": "lp-trading-fee",
+          "totalRaw": "72253598",
+          "total": "0.0722",
+          "receipts": 40
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "window": {
+        "fromSlot": 249838000,
+        "toSlot": 249892000
+      },
+      "closedAt": "2026-09-07T16:44:30.689Z",
+      "settled": true,
+      "collectedRaw": "128458681",
+      "collected": "0.1284",
+      "allocations": [
+        {
+          "bucket": "buyback",
+          "label": "Buyback & Burn",
+          "bps": 3500,
+          "amountRaw": "44960539",
+          "amount": "0.0449"
+        },
+        {
+          "bucket": "drip",
+          "label": "Holder Drip",
+          "bps": 3500,
+          "amountRaw": "44960538",
+          "amount": "0.0449"
+        },
+        {
+          "bucket": "liquidity",
+          "label": "Liquidity Deepening",
+          "bps": 2000,
+          "amountRaw": "25691736",
+          "amount": "0.0256"
+        },
+        {
+          "bucket": "treasury",
+          "label": "Build Fund",
+          "bps": 1000,
+          "amountRaw": "12845868",
+          "amount": "0.0128"
+        }
+      ],
+      "drip": {
+        "recipients": 120,
+        "totalRaw": "44960473",
+        "total": "0.0449",
+        "root": "0xccf9a6346214d5dce2c984a96d5ab168c1ee349014f204e40e6f13c61a4eaff5"
+      },
+      "sources": [
+        {
+          "kind": "pons-creator-fee",
+          "totalRaw": "44285740",
+          "total": "0.0442",
+          "receipts": 24
+        },
+        {
+          "kind": "lp-trading-fee",
+          "totalRaw": "84172882",
+          "total": "0.0841",
+          "receipts": 40
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "window": {
+        "fromSlot": 249892000,
+        "toSlot": 249946000
+      },
+      "closedAt": "2026-09-07T16:44:30.691Z",
+      "settled": true,
+      "collectedRaw": "121588035",
+      "collected": "0.1215",
+      "allocations": [
+        {
+          "bucket": "buyback",
+          "label": "Buyback & Burn",
+          "bps": 3500,
+          "amountRaw": "42555812",
+          "amount": "0.0425"
+        },
+        {
+          "bucket": "drip",
+          "label": "Holder Drip",
+          "bps": 3500,
+          "amountRaw": "42555812",
+          "amount": "0.0425"
+        },
+        {
+          "bucket": "liquidity",
+          "label": "Liquidity Deepening",
+          "bps": 2000,
+          "amountRaw": "24317607",
+          "amount": "0.0243"
+        },
+        {
+          "bucket": "treasury",
+          "label": "Build Fund",
+          "bps": 1000,
+          "amountRaw": "12158804",
+          "amount": "0.0121"
+        }
+      ],
+      "drip": {
+        "recipients": 120,
+        "totalRaw": "42555749",
+        "total": "0.0425",
+        "root": "0x295ab8dfe1e8cdc03500dbce596c3ba8112fe9d4d6ecc6d04e6c35e380dffeed"
+      },
+      "sources": [
+        {
+          "kind": "pons-creator-fee",
+          "totalRaw": "49222355",
+          "total": "0.0492",
+          "receipts": 24
+        },
+        {
+          "kind": "lp-trading-fee",
+          "totalRaw": "72365615",
+          "total": "0.0723",
+          "receipts": 40
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "window": {
+        "fromSlot": 249946000,
+        "toSlot": 250000000
+      },
+      "closedAt": "2026-09-07T16:44:30.692Z",
+      "settled": true,
+      "collectedRaw": "140886081",
+      "collected": "0.1408",
+      "allocations": [
+        {
+          "bucket": "buyback",
+          "label": "Buyback & Burn",
+          "bps": 3500,
+          "amountRaw": "49310129",
+          "amount": "0.0493"
+        },
+        {
+          "bucket": "drip",
+          "label": "Holder Drip",
+          "bps": 3500,
+          "amountRaw": "49310128",
+          "amount": "0.0493"
+        },
+        {
+          "bucket": "liquidity",
+          "label": "Liquidity Deepening",
+          "bps": 2000,
+          "amountRaw": "28177216",
+          "amount": "0.0281"
+        },
+        {
+          "bucket": "treasury",
+          "label": "Build Fund",
+          "bps": 1000,
+          "amountRaw": "14088608",
+          "amount": "0.014"
+        }
+      ],
+      "drip": {
+        "recipients": 120,
+        "totalRaw": "49310065",
+        "total": "0.0493",
+        "root": "0x8d583f63aa516a27c11f8b8aeafb7734c334b60a983485d468fe5d453d5a84b3"
+      },
+      "sources": [
+        {
+          "kind": "pons-creator-fee",
+          "totalRaw": "57795357",
+          "total": "0.0577",
+          "receipts": 24
+        },
+        {
+          "kind": "lp-trading-fee",
+          "totalRaw": "83090661",
+          "total": "0.083",
+          "receipts": 40
+        }
+      ]
+    }
+  ]
+};
