@@ -203,13 +203,25 @@ async function cmdCycle(config: FaucetConfig, argv: readonly string[]): Promise<
     await writeJson(sitePath, JSON.stringify(siteData, null, 2));
     process.stdout.write(`  wrote ${sitePath}\n`);
 
+    // Claim files go to the site too, so the in-browser verifier can rebuild
+    // the tree from exactly what the CLI verifies against.
+    const index: Array<{ epoch: number; root: string; claims: number; file: string }> = [];
     for (const result of results) {
       if (!result.settled) continue;
-      const path = join(outDir, 'claims', `epoch-${result.epoch.id}.json`);
-      await writeJson(path, toClaimFile(result.epoch));
-      process.stdout.write(`  wrote ${path}\n`);
+      const body = toClaimFile(result.epoch);
+      const file = `epoch-${result.epoch.id}.json`;
+      await writeJson(join(outDir, 'claims', file), body);
+      await writeJson(join('site', 'data', 'claims', file), body);
+      index.push({
+        epoch: result.epoch.id,
+        root: result.epoch.distribution.root,
+        claims: result.epoch.distribution.claims.length,
+        file: `claims/${file}`,
+      });
+      process.stdout.write(`  wrote ${join(outDir, 'claims', file)}\n`);
     }
-    process.stdout.write('\n');
+    await writeJson(join('site', 'data', 'claims', 'index.json'), JSON.stringify(index, null, 2));
+    process.stdout.write(`  wrote site/data/claims/index.json (${index.length} epochs)\n\n`);
   }
 }
 

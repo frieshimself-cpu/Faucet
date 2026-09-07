@@ -130,7 +130,7 @@ code {
   inset: -120px;
   z-index: 9000;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.38;
   mix-blend-mode: overlay;
   background-image: var(--grain-src);
   background-size: 220px 220px;
@@ -155,157 +155,6 @@ code {
   pointer-events: none;
   background: radial-gradient(130% 100% at 50% 42%, transparent 48%, rgba(0, 0, 0, 0.62) 100%);
 }
-
-/* ── the cursor droplet ──────────────────────────────────────────────────────
-   Pointer-precise devices only. A bead that lags the pointer and swells over
-   anything interactive; touch devices never see it.                           */
-
-.bead {
-  position: fixed;
-  top: 0; left: 0;
-  z-index: 8980;
-  width: 10px; height: 10px;
-  border-radius: 50% 50% 55% 55% / 60% 60% 45% 45%;
-  background: radial-gradient(circle at 35% 30%, var(--water-pale), var(--water) 55%, var(--water-deep));
-  box-shadow: 0 0 14px rgba(0, 224, 122, 0.65);
-  pointer-events: none;
-  opacity: 0;
-  transform: translate3d(-50px, -50px, 0);
-  transition: opacity 0.3s var(--ease-out), width 0.28s var(--ease-snap), height 0.28s var(--ease-snap);
-}
-
-.bead.is-live { opacity: 0.9; }
-.bead.is-hot { width: 30px; height: 30px; opacity: 0.35; }
-
-@media (hover: none), (pointer: coarse) {
-  .bead { display: none; }
-}
-
-/* ── the preloader: a valve opening ─────────────────────────────────────────
-   The page is "pressurising" — the wheel spins, the gauge sweeps, the shutter
-   splits and drains away. Under 1.6s, and skipped entirely for reduced motion. */
-
-.boot {
-  position: fixed;
-  inset: 0;
-  z-index: 9500;
-  display: grid;
-  place-items: center;
-  background: var(--void);
-}
-
-.boot__panels { position: absolute; inset: 0; }
-
-.boot__panels span {
-  position: absolute;
-  left: 0; right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, #070d10, #04070a);
-  transition: transform 0.95s var(--ease-fluid);
-}
-
-.boot__panels span:first-child { top: 0; border-bottom: 1px solid var(--line); }
-.boot__panels span:last-child { bottom: 0; border-top: 1px solid var(--line); }
-
-.boot.is-done .boot__panels span:first-child { transform: translateY(-101%); }
-.boot.is-done .boot__panels span:last-child { transform: translateY(101%); }
-.boot.is-done { pointer-events: none; }
-.boot.is-done .boot__core { opacity: 0; transform: scale(0.94); transition: opacity 0.4s, transform 0.5s; }
-.boot.is-gone { display: none; }
-
-.boot__core {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 1.4rem;
-}
-
-.boot__wheel { width: 92px; height: 92px; animation: boot-spin 1.5s var(--ease-fluid) forwards; }
-
-@keyframes boot-spin {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(268deg); }
-}
-
-.boot__label {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.42em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding-left: 0.42em;
-}
-
-.boot__bar {
-  width: 200px; height: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.07);
-  overflow: hidden;
-}
-
-.boot__bar i {
-  display: block;
-  height: 100%;
-  width: 0;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--water-deep), var(--water), var(--water-bright));
-  box-shadow: 0 0 12px rgba(0, 224, 122, 0.8);
-  animation: boot-fill 1.4s var(--ease-fluid) forwards;
-}
-
-@keyframes boot-fill { to { width: 100%; } }
-
-/* ── the riser: page scroll as a filling pipe ────────────────────────────────
-   Fixed to the left margin on wide screens. The water column height tracks
-   scroll, and a bead rides the meniscus.                                      */
-
-.riser {
-  position: fixed;
-  left: max(0.7rem, var(--rail));
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 80;
-  width: 14px;
-  height: min(46vh, 380px);
-  border-radius: 8px;
-  background: linear-gradient(90deg, #0b1215, #060c0e 45%, #0d1518);
-  border: 1px solid var(--line);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9);
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.6s var(--ease-out);
-}
-
-.riser.is-live { opacity: 1; }
-
-.riser__fill {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: var(--fill, 0%);
-  background: linear-gradient(180deg, var(--water-bright), var(--water) 24%, var(--water-deep));
-  box-shadow: 0 0 16px rgba(0, 224, 122, 0.55);
-  transition: height 0.18s linear;
-}
-
-.riser__fill::after {
-  /* the meniscus */
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 4px;
-  background: var(--water-pale);
-  opacity: 0.85;
-  filter: blur(0.4px);
-}
-
-.riser__ticks {
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(180deg, transparent 0 23px, rgba(255, 255, 255, 0.11) 23px 24px);
-  pointer-events: none;
-}
-
-@media (max-width: 1180px) { .riser { display: none; } }
 
 /* ── layout ─────────────────────────────────────────────────────────────── */
 
@@ -429,28 +278,15 @@ code {
   font-size: 0.95rem;
   letter-spacing: -0.01em;
   cursor: pointer;
-  overflow: hidden;
-  isolation: isolate;
-  transform: translate3d(var(--mx, 0), var(--my, 0), 0);
   transition:
-    transform 0.35s var(--ease-out),
+    transform 0.3s var(--ease-out),
     border-color 0.3s var(--ease-out),
     box-shadow 0.3s var(--ease-out);
   white-space: nowrap;
 }
 
-/* A wet sheen that sweeps across on hover. */
-.btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.4) 50%, transparent 68%);
-  transform: translateX(-130%);
-  transition: transform 0.7s var(--ease-fluid);
-}
-
-.btn:hover::before { transform: translateX(130%); }
+.btn:hover { transform: translateY(-1px); }
+.btn--sm { padding: 0.55rem 1rem; font-size: 0.86rem; }
 
 .btn--primary {
   --btn-bg: linear-gradient(135deg, var(--water-bright) -10%, var(--water) 45%, #00a85c 100%);
@@ -482,20 +318,6 @@ code {
   100% { transform: translateY(8px) scaleY(0.55); opacity: 0; }
 }
 
-/* Click ripple, injected by motion.js. */
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  background: radial-gradient(circle, rgba(214, 255, 240, 0.55), transparent 70%);
-  animation: ripple-out 0.65s var(--ease-out) forwards;
-  pointer-events: none;
-}
-
-@keyframes ripple-out {
-  to { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-}
-
 /* ── utility ─────────────────────────────────────────────────────────────── */
 
 .visually-hidden {
@@ -507,6 +329,30 @@ code {
   white-space: nowrap;
   border: 0;
 }
+
+/* ── small shared bits ───────────────────────────────────────────────── */
+
+.mono { font-family: var(--font-mono); font-size: 0.86em; }
+.hash { word-break: break-all; color: #7fb4ff; }
+
+.pill {
+  display: inline-block;
+  padding: 0.14rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pill--ok   { border-color: rgba(0, 224, 122, 0.35); color: var(--water-bright); background: var(--water-wash); }
+.pill--warn { border-color: rgba(184, 115, 51, 0.45); color: var(--copper-lit); background: rgba(184, 115, 51, 0.12); }
+
+.section__head--compact { margin-bottom: clamp(1.6rem, 3vw, 2.4rem); }
+.section__head--compact .section__title { font-size: clamp(1.7rem, 1.1rem + 2.2vw, 2.6rem); }
 
 .skip-link {
   position: absolute;
@@ -545,5 +391,4 @@ code {
   }
   [data-reveal] { opacity: 1; transform: none; clip-path: none; }
   .grain { display: none; }
-  .boot { display: none; }
 }

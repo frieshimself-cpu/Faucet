@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Robinhood — The Faucet. Every fee drips back.</title>
-<meta name="description" content="Robinhood on Pons. 100% of collected fees are routed back into the project: buyback and burn, holder drip, deeper liquidity, build fund. Provable every epoch." />
+<title>Robinhood — fee-recycling on Pons</title>
+<meta name="description" content="Robinhood ($ROBIN) on Pons. Every six hours the Faucet sweeps the fee vaults, splits 100% of the total four ways by a fixed policy, and publishes a Merkle root over the holder drip. Verify your own drip in the browser." />
 <meta name="theme-color" content="#04070a" />
-<meta property="og:title" content="Robinhood — The Faucet" />
-<meta property="og:description" content="Every fee drips back to the people it came from. 100% recycled, provable every epoch." />
+<meta property="og:title" content="Robinhood — fee-recycling on Pons" />
+<meta property="og:description" content="100% of collected fees routed back into the project, provably, every epoch." />
 <meta property="og:type" content="website" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%9A%B0%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
@@ -19,43 +19,15 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-
-<!-- ═══════════════════════════ chrome: boot, grain, cursor, riser ══════════ -->
-
-<div class="boot" id="boot" aria-hidden="true">
-  <div class="boot__panels"><span></span><span></span></div>
-  <div class="boot__core">
-    <svg class="boot__wheel" viewBox="0 0 100 100" fill="none">
-      <circle cx="50" cy="50" r="34" stroke="url(#bootBrass)" stroke-width="7"/>
-      <path d="M50 16v68M16 50h68M26 26l48 48M74 26l-48 48" stroke="url(#bootBrass)" stroke-width="6" stroke-linecap="round"/>
-      <circle cx="50" cy="50" r="11" fill="url(#bootBrass)"/>
-      <circle cx="50" cy="50" r="4" fill="#2b1608"/>
-      <defs>
-        <linearGradient id="bootBrass" x1="16" y1="16" x2="84" y2="84" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#fdeacd"/><stop offset=".45" stop-color="#b87333"/><stop offset="1" stop-color="#5f3414"/>
-        </linearGradient>
-      </defs>
-    </svg>
-    <p class="boot__label">Pressurising</p>
-    <div class="boot__bar"><i></i></div>
-  </div>
-</div>
-
 <div class="grain" aria-hidden="true"></div>
 <div class="vignette" aria-hidden="true"></div>
-<div class="bead" id="bead" aria-hidden="true"></div>
-
-<div class="riser" id="riser" aria-hidden="true">
-  <div class="riser__fill" id="riserFill"></div>
-  <div class="riser__ticks"></div>
-</div>
 
 <!-- ═══════════════════════════════════ NAV ═════════════════════════════════ -->
 
 <header class="nav" id="nav">
   <div class="nav__rail" aria-hidden="true"></div>
   <div class="shell nav__inner">
-    <a class="brand" href="#top" aria-label="Robinhood home">
+    <a class="brand" href="/" aria-label="Robinhood home">
       <span class="brand__mark" aria-hidden="true">
         <svg viewBox="0 0 44 44" fill="none">
           <rect x="3" y="11" width="9" height="13" rx="3" fill="url(#bm)"/>
@@ -76,28 +48,17 @@
     </a>
 
     <nav class="nav__links" aria-label="Primary">
-      <a href="#loop"><span>The Loop</span></a>
-      <a href="#split"><span>The Split</span></a>
-      <a href="#proof"><span>Proof</span></a>
+      <a href="#mechanism"><span>Mechanism</span></a>
+      <a href="#split"><span>Split</span></a>
+      <a href="#verify"><span>Verify</span></a>
       <a href="#ledger"><span>Ledger</span></a>
-      <a href="#build"><span>The Run</span></a>
-      <a href="#faq"><span>FAQ</span></a>
+      <a href="/docs"><span>Docs</span></a>
+      <a href="/changelog"><span>Changelog</span></a>
+      <a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener"><span>GitHub</span></a>
     </nav>
 
-    <div class="nav__meter" aria-hidden="true" title="Line pressure">
-      <svg viewBox="0 0 44 30">
-        <path d="M5 25 A17 17 0 0 1 39 25" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="4" stroke-linecap="round"/>
-        <path id="navMeterArc" d="M5 25 A17 17 0 0 1 39 25" fill="none" stroke="var(--water)" stroke-width="4"
-              stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="53.4"/>
-        <g id="navMeterNeedle" style="transform-origin:22px 25px"><path d="M22 25 L22 12" stroke="var(--copper-lit)" stroke-width="2" stroke-linecap="round"/></g>
-        <circle cx="22" cy="25" r="3" fill="var(--copper)"/>
-      </svg>
-    </div>
-
-    <a class="btn btn--valve" href="#loop">
-      <span class="btn__wheel" aria-hidden="true"></span>
-      Open the tap
-    </a>
+    <span class="nav__build" id="navBuild" title="Build stamp">v0.1.0</span>
+    <a class="btn btn--ghost btn--sm" href="#verify">Verify a drip</a>
   </div>
 </header>
 
@@ -111,11 +72,14 @@
 
   <div class="shell hero__inner">
     <div class="hero__copy">
-      <p class="eyebrow">
-        <span class="eyebrow__dot" aria-hidden="true"></span>
-        Launching on <strong data-bind="project.launchpad">Pons</strong>
+      <p class="eyebrow" id="heroStamp">
+        <span class="eyebrow__tag">v<span data-bind="build.version">0.1.0</span></span>
         <span class="eyebrow__sep" aria-hidden="true"></span>
-        Solana
+        <span data-bind="build.stage">pre-launch</span>
+        <span class="eyebrow__sep" aria-hidden="true"></span>
+        engine <span data-bind="build.tests">42</span>/<span data-bind="build.tests">42</span>
+        <span class="eyebrow__sep" aria-hidden="true"></span>
+        <code class="eyebrow__sha" data-bind="build.short">0000000</code>
       </p>
 
       <h1 class="hero__title" data-split>
@@ -125,23 +89,28 @@
       </h1>
 
       <p class="hero__lede">
-        Most launches point the fee pipe at somebody's wallet. This one points it back at the
-        pool, the holders, and the build fund — <strong>all of it, every epoch</strong> — and the
-        engine refuses to settle unless the four outlets add up to exactly what came in.
+        Robinhood is a token on <strong data-bind="project.launchpad">Pons</strong> whose fee stream is
+        wired back into itself. Every six hours the engine sweeps the creator vault and the pool's
+        fees, splits the total four ways by a fixed policy, publishes a Merkle root over the holder
+        drip, and refuses to settle if a single lamport is unaccounted for.
+      </p>
+      <p class="hero__lede hero__lede--small">
+        This page renders the file the engine wrote. There is no server between you and the numbers.
       </p>
 
       <div class="hero__actions">
-        <a class="btn btn--primary" data-magnet href="#loop">
+        <a class="btn btn--primary" href="#mechanism">
           <span class="btn__drip" aria-hidden="true"></span>
-          See where it goes
+          How it routes
         </a>
-        <a class="btn btn--ghost" data-magnet href="#proof">Verify a drip</a>
+        <a class="btn btn--ghost" href="#verify">Verify a drip</a>
+        <a class="hero__docs" href="/docs">Read the docs <span aria-hidden="true">&rarr;</span></a>
       </div>
 
       <div class="ca">
-        <span class="ca__label">Contract</span>
-        <code class="ca__value" id="contractValue" data-bind="mint.address">not yet minted — set at launch</code>
-        <button class="ca__copy" type="button" data-copy-target="#contractValue" aria-label="Copy contract address">
+        <span class="ca__label">Mint</span>
+        <code class="ca__value" id="contractValue" data-bind="mint.address">not yet minted</code>
+        <button class="ca__copy" type="button" data-copy-target="#contractValue" aria-label="Copy mint address">
           <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6.5" y="6.5" width="10" height="12" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M13.5 4.5h-8a2 2 0 0 0-2 2v9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
           <span class="ca__copy-text">Copy</span>
         </button>
@@ -159,8 +128,8 @@
           <span class="scene__plaqueNo">FAUCET N&deg; 001 &middot; SOL</span>
         </div>
         <div class="scene__stage">
-      <canvas class="fixture__canvas" id="waterCanvas" aria-hidden="true"></canvas>
-      <svg class="faucet" id="faucet" viewBox="0 0 470 620" role="img"
+          <canvas class="fixture__canvas" id="waterCanvas" aria-hidden="true"></canvas>
+          <svg class="faucet" id="faucet" viewBox="0 0 470 620" role="img"
            aria-label="A brass wall-mounted faucet dripping into a graduated glass tank">
         <defs>
           <!-- Cylinder shading. A pipe is not a flat colour: it is a dark edge,
@@ -336,7 +305,6 @@
           <rect x="232" y="602" width="236" height="12" rx="6" fill="url(#ring)" opacity=".85"/>
         </g>
       </svg>
-
         </div>
         <div class="scene__floor" aria-hidden="true"></div>
         <div class="scene__readouts">
@@ -355,7 +323,6 @@
     </div>
   </div>
 
-  <!-- ── ticker ── -->
   <div class="ticker" aria-hidden="true">
     <div class="ticker__track" id="tickerTrack"></div>
     <div class="ticker__fade ticker__fade--l"></div>
@@ -373,28 +340,27 @@
       <li class="stat">
         <span class="stat__label">Dripped to holders</span>
         <span class="stat__value"><span data-count data-bind="totals.drippedNum">0</span> <em>SOL</em></span>
-        <span class="stat__note"><span data-bind="totals.recipients">0</span> wallets paid</span>
+        <span class="stat__note"><span data-bind="totals.recipients">0</span> wallets, claimable by proof</span>
         <span class="stat__spark" data-spark="drip" aria-hidden="true"></span>
       </li>
       <li class="stat">
         <span class="stat__label">Bought &amp; burned</span>
         <span class="stat__value"><span data-count data-bind="totals.burnedNum">0</span> <em>SOL</em></span>
-        <span class="stat__note">supply only goes one way</span>
+        <span class="stat__note">spent on market, sent to the burn address</span>
         <span class="stat__spark stat__spark--burn" data-spark="burn" aria-hidden="true"></span>
       </li>
       <li class="stat">
         <span class="stat__label">Epochs settled</span>
         <span class="stat__value"><span data-count data-bind="totals.epochs">0</span></span>
-        <span class="stat__note">every one auditable below</span>
+        <span class="stat__note">54,000 slots each, about six hours</span>
         <span class="stat__spark stat__spark--build" data-spark="epochs" aria-hidden="true"></span>
       </li>
     </ul>
-    <p class="stats__source" id="statsSource">Reading <code>site/data/faucet.json</code>, written by the engine.</p>
+    <p class="stats__source" id="statsSource">Source: <code>data/faucet.json</code>, written by <code>faucet cycle</code>.</p>
   </div>
 </section>
 
-<div class="joint" data-joint aria-hidden="true">
-  <svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
+<div class="joint" data-joint aria-hidden="true"><svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
     <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
     <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
     <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
@@ -403,20 +369,21 @@
     <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
     <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
     <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg>
-</div>
+  </svg></div>
 
-<!-- ═══════════════════════════════════ LOOP ════════════════════════════════ -->
+<!-- ═══════════════════════════════════ MECHANISM ═══════════════════════════ -->
 
-<section class="section section--loop" id="loop">
+<section class="section" id="mechanism">
   <div class="shell">
     <header class="section__head" data-num="01">
-      <p class="section__kicker"><span class="pipe-tick"></span>01 &mdash; Plumbing</p>
-      <h2 class="section__title">One inlet manifold, <em class="ink">four outlets.</em> No hidden taps.</h2>
+      <p class="section__kicker"><span class="pipe-tick"></span>Mechanism</p>
+      <h2 class="section__title">Two inlets, one manifold, <em class="ink">four outlets.</em></h2>
       <p class="section__lede">
-        Fees arrive from two places. They land in one manifold, and the manifold has exactly four
-        ways out — all of them pointing back inside. There is no fifth pipe, and the engine will
-        not settle an epoch unless the four add up to 100.00%.
+        Fees come from the Pons creator vault and from the pool's trading fees. Once per epoch the
+        engine reads every finalized credit to those accounts inside the slot window, adds anything
+        carried over from a previous epoch, and routes the total. The four outlets are the only
+        outlets. The routing step runs a conservation check and throws, rather than settling, if
+        what was routed differs from what was collected by even one lamport.
       </p>
     </header>
 
@@ -427,7 +394,6 @@
           <span class="screw screw--tr" aria-hidden="true"></span>
           <span class="screw screw--bl" aria-hidden="true"></span>
           <span class="screw screw--br" aria-hidden="true"></span>
-
           <div class="loop__stage">
             <svg class="flow" id="flowDiagram" viewBox="-60 0 1420 640" role="img"
                  aria-label="Fee routing diagram: Pons creator fees and LP trading fees flow into the Faucet manifold, which splits into buyback and burn, holder drip, liquidity, and build fund.">
@@ -569,38 +535,37 @@
       <aside class="loop__panel">
         <div class="panel__head">
           <span class="panel__led" aria-hidden="true"></span>
-          <h3 class="panel__title">Pressure test</h3>
+          <h3 class="panel__title">Try an amount</h3>
         </div>
         <p class="panel__text">
-          Send a different amount through the manifold. The four outlets always add up to what came
-          in — that is the only thing this engine is allowed to do.
+          This runs the engine's own allocation routine, in BigInt, with largest-remainder rounding.
+          The four outlets always sum to the input exactly.
         </p>
 
         <label class="slider" for="throughput">
-          <span class="slider__label">Fees this epoch</span>
+          <span class="slider__label">Collected this epoch</span>
           <span class="slider__value"><span id="throughputValue">12.40</span> <em>SOL</em></span>
           <input type="range" id="throughput" min="0.05" max="120" step="0.05" value="12.4" />
           <span class="slider__scale" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         </label>
 
         <ul class="loop__outputs" id="loopOutputs">
-          <li data-bucket="buyback"><span class="dot"></span><span class="k">Buyback &amp; Burn</span><span class="v">4.3400</span><span class="bar" style="--w:35%"></span></li>
-          <li data-bucket="drip"><span class="dot"></span><span class="k">Holder Drip</span><span class="v">4.3400</span><span class="bar" style="--w:35%"></span></li>
+          <li data-bucket="buyback"><span class="dot"></span><span class="k">Buyback &amp; burn</span><span class="v">4.3400</span><span class="bar" style="--w:35%"></span></li>
+          <li data-bucket="drip"><span class="dot"></span><span class="k">Holder drip</span><span class="v">4.3400</span><span class="bar" style="--w:35%"></span></li>
           <li data-bucket="liquidity"><span class="dot"></span><span class="k">Liquidity</span><span class="v">2.4800</span><span class="bar" style="--w:20%"></span></li>
-          <li data-bucket="treasury"><span class="dot"></span><span class="k">Build Fund</span><span class="v">1.2400</span><span class="bar" style="--w:10%"></span></li>
+          <li data-bucket="treasury"><span class="dot"></span><span class="k">Build fund</span><span class="v">1.2400</span><span class="bar" style="--w:10%"></span></li>
         </ul>
 
         <p class="loop__checksum" id="loopChecksum">
           <span class="loop__checksumOk" aria-hidden="true"></span>
-          Balanced: <strong>12.4000</strong> in, <strong>12.4000</strong> out.
+          <strong>12.4000</strong> in, <strong>12.4000</strong> out.
         </p>
       </aside>
     </div>
   </div>
 </section>
 
-<div class="joint joint--right" data-joint aria-hidden="true">
-  <svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
+<div class="joint joint--right" data-joint aria-hidden="true"><svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
     <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
     <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
     <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
@@ -609,20 +574,20 @@
     <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
     <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
     <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg>
-</div>
+  </svg></div>
 
 <!-- ═══════════════════════════════════ SPLIT ═══════════════════════════════ -->
 
-<section class="section section--split" id="split">
+<section class="section" id="split">
   <div class="shell">
     <header class="section__head" data-num="02">
-      <p class="section__kicker"><span class="pipe-tick"></span>02 &mdash; The Split</p>
-      <h2 class="section__title">Four dials. <em class="ink">Read them yourself.</em></h2>
+      <p class="section__kicker"><span class="pipe-tick"></span>The split</p>
+      <h2 class="section__title">Fixed in one file, <em class="ink">read by both.</em></h2>
       <p class="section__lede">
-        These numbers live in one file — <code>engine/src/config.ts</code> — and both this page and
-        the settlement engine read the same one. If the split changes, it changes here, in the
-        commit history, and in the next epoch's receipt at the same moment.
+        The policy is a list of four rules in <code>engine/src/config.ts</code>. The engine
+        imports it to settle; this page reads a generated copy of it. Changing the split is a
+        commit that changes both at once, and the engine refuses to start if the rules do not sum to
+        10,000 basis points.
       </p>
     </header>
 
@@ -631,11 +596,10 @@
         <span class="screw screw--tl"></span><span class="screw screw--tr"></span>
         <span class="screw screw--bl"></span><span class="screw screw--br"></span>
       </div>
-
       <div class="console__strip" aria-hidden="true">
-        <span class="console__plate">FAUCET / ROUTING MANIFOLD</span>
+        <span class="console__plate">ROUTING POLICY</span>
         <span class="console__leds"><i></i><i></i><i></i><i></i></span>
-        <span class="console__serial">REV 0.1 — SOL / PONS</span>
+        <span class="console__serial">sha256 <span id="policyHash">computing&hellip;</span></span>
       </div>
 
       <div class="dials" id="dials">
@@ -658,7 +622,7 @@
             </svg>
             <span class="dial__readout" data-bind="policy.buyback.pct">35.00%</span>
           </div>
-          <h3>Buyback &amp; Burn</h3>
+          <h3>Buyback &amp; burn</h3>
           <p>Fees are spent buying <span data-bind="project.tickerTag">$ROBIN</span> on the open market, and every token bought goes to the burn address. Sell pressure funds its own opposite.</p>
           <ul class="dial-card__facts">
             <li><span>Destination</span><strong>Burn address</strong></li>
@@ -685,7 +649,7 @@
             </svg>
             <span class="dial__readout" data-bind="policy.drip.pct">35.00%</span>
           </div>
-          <h3>Holder Drip</h3>
+          <h3>Holder drip</h3>
           <p>Split across eligible holders by <strong>time-weighted</strong> balance, not by a snapshot. Buying one slot before the cut-off earns you almost nothing; holding the whole epoch earns you all of it.</p>
           <ul class="dial-card__facts">
             <li><span>Weighting</span><strong>Time-weighted</strong></li>
@@ -712,7 +676,7 @@
             </svg>
             <span class="dial__readout" data-bind="policy.liquidity.pct">20.00%</span>
           </div>
-          <h3>Liquidity Deepening</h3>
+          <h3>Liquidity</h3>
           <p>Paired and added to the pool as protocol-owned liquidity. The LP tokens are not held by a person, so there is no wallet that can pull them. Depth only ratchets up.</p>
           <ul class="dial-card__facts">
             <li><span>Owner</span><strong>Protocol</strong></li>
@@ -739,7 +703,7 @@
             </svg>
             <span class="dial__readout" data-bind="policy.treasury.pct">10.00%</span>
           </div>
-          <h3>Build Fund</h3>
+          <h3>Build fund</h3>
           <p>The only bucket that pays for work: RPC, indexing, audits, integrations. It is an on-chain account, and every spend is listed in that epoch's receipt with what it bought.</p>
           <ul class="dial-card__facts">
             <li><span>Custody</span><strong>On-chain treasury</strong></li>
@@ -747,18 +711,27 @@
           </ul>
         </article>
       </div>
+    </div>
 
-      <p class="console__seal">
-        <span class="console__sealIcon" aria-hidden="true"></span>
-        <strong>35 + 35 + 20 + 10 = 100.</strong>
-        <span>The engine calls <code>assertPolicyBalanced()</code> before every single cycle, and throws rather than settle a policy that leaks a basis point.</span>
-      </p>
+    <div class="constants">
+      <h3 class="constants__title">Parameters</h3>
+      <p class="constants__note">Everything below is a literal in the config, not a knob on a dashboard.</p>
+      <dl class="constants__grid">
+        <div><dt>Epoch length</dt><dd>54,000 slots <span>&asymp; 6 h at 2.5 slots/s</span></dd></div>
+        <div><dt>Settle floor</dt><dd>0.01 SOL <span>below this the epoch carries forward</span></dd></div>
+        <div><dt>Holder floor</dt><dd>1 ROBIN <span>time-weighted; smaller balances are not counted</span></dd></div>
+        <div><dt>Weighting</dt><dd>balance &times; slots held <span>integrated over the epoch, not a snapshot</span></dd></div>
+        <div><dt>Rounding</dt><dd>largest remainder <span>sum of outlets equals input exactly</span></dd></div>
+        <div><dt>Dust</dt><dd>carried to next epoch <span>never burned by rounding, never retained</span></dd></div>
+        <div><dt>Leaf hash</dt><dd>sha256(0x00 &#8214; u32 idx &#8214; owner &#8214; u64 amt) <span>domain-separated from nodes (0x01)</span></dd></div>
+        <div><dt>Odd nodes</dt><dd>promoted <span>never paired with themselves</span></dd></div>
+        <div><dt>Runtime deps</dt><dd>0 <span>engine is TypeScript over fetch and node:crypto</span></dd></div>
+      </dl>
     </div>
   </div>
 </section>
 
-<div class="joint" data-joint aria-hidden="true">
-  <svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
+<div class="joint" data-joint aria-hidden="true"><svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
     <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
     <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
     <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
@@ -767,92 +740,98 @@
     <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
     <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
     <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg>
-</div>
+  </svg></div>
 
-<!-- ═══════════════════════════════════ PROOF ═══════════════════════════════ -->
+<!-- ═══════════════════════════════════ VERIFY ══════════════════════════════ -->
 
-<section class="section section--proof" id="proof">
+<section class="section" id="verify">
   <div class="shell">
     <header class="section__head" data-num="03">
-      <p class="section__kicker"><span class="pipe-tick"></span>03 &mdash; Proof</p>
-      <h2 class="section__title">&ldquo;Trust me&rdquo; is <em class="ink">not a mechanism.</em></h2>
+      <p class="section__kicker"><span class="pipe-tick"></span>Verify</p>
+      <h2 class="section__title">Check a drip <em class="ink">without asking us.</em></h2>
       <p class="section__lede">
-        Every epoch publishes a Merkle root over the claim set. Anyone can rebuild the tree from the
-        published claim file, check the root matches, and check their own drip is in it — without
-        asking us for anything.
+        Pick an epoch and paste a wallet. The page fetches that epoch's published claim file,
+        rebuilds the Merkle tree in your browser with WebCrypto, derives the proof for that wallet,
+        and compares the root it computed with the root the engine published. The browser
+        implementation is tested against the engine's on every build.
       </p>
     </header>
 
-    <div class="proof">
-      <ol class="proof__steps">
-        <li class="proof__step">
-          <span class="proof__num">1</span>
-          <h3>Collect</h3>
-          <p>Adapters read the fee vaults and record every finalized credit inside the epoch's slot window. Adapters can only observe — they hold no keys and can move nothing.</p>
-        </li>
-        <li class="proof__step">
-          <span class="proof__num">2</span>
-          <h3>Route</h3>
-          <p>The total is split by the policy using largest-remainder allocation, so the four buckets sum to the input <em>exactly</em>. No lamport is lost to integer division.</p>
-        </li>
-        <li class="proof__step">
-          <span class="proof__num">3</span>
-          <h3>Weigh</h3>
-          <p>Holder balances are integrated across the epoch — balance multiplied by slots held. A one-slot borrow earns a one-slot share.</p>
-        </li>
-        <li class="proof__step">
-          <span class="proof__num">4</span>
-          <h3>Prove</h3>
-          <p>Claims are hashed into a Merkle tree with domain-separated leaves, and the root is published. Your proof is a handful of hashes; verifying it is a loop, not an API call.</p>
-        </li>
-      </ol>
-
-      <div class="proof__stack">
-        <div class="terminal" id="terminal">
-          <div class="terminal__bar">
-            <span class="terminal__dot"></span><span class="terminal__dot"></span><span class="terminal__dot"></span>
-            <span class="terminal__name">faucet &mdash; verify</span>
-          </div>
-          <pre class="terminal__body"><code id="termOut"></code><span class="term-caret" id="termCaret"></span></pre>
+    <div class="verify">
+      <form class="verify__form" id="verifyForm" autocomplete="off">
+        <div class="verify__row">
+          <label class="field">
+            <span class="field__label">Epoch</span>
+            <select class="field__input" id="verifyEpoch" name="epoch"></select>
+          </label>
+          <label class="field field--grow">
+            <span class="field__label">Wallet</span>
+            <input class="field__input" id="verifyOwner" name="owner" type="text" spellcheck="false"
+                   placeholder="paste an address, or pick a sample below" />
+          </label>
+          <button class="btn btn--primary verify__go" type="submit">Verify</button>
         </div>
+        <p class="verify__samples" id="verifySamples"></p>
+      </form>
 
-        <figure class="tree" id="tree">
-          <figcaption class="tree__cap">
-            <span class="tree__capTitle">Proof path</span>
-            <span class="tree__capNote">leaf <b id="treeLeaf">5</b> &rarr; root, with its <b id="treeSibs">3</b> siblings</span>
-          </figcaption>
-          <svg viewBox="0 0 560 260" role="img" aria-label="A Merkle tree with eight leaves; the path from one leaf to the root lights up along with the sibling hashes that prove it.">
-            <g class="tree__edges" id="treeEdges" stroke-linecap="round"></g>
-            <g class="tree__nodes" id="treeNodes"></g>
-          </svg>
-        </figure>
+      <div class="verify__result" id="verifyResult" aria-live="polite">
+        <div class="verify__empty" id="verifyEmpty">
+          <p>No lookup yet. The claim set for the selected epoch loads on demand, and nothing you type leaves this page.</p>
+        </div>
+        <div class="verify__panel" id="verifyPanel" hidden>
+          <div class="verify__status" id="verifyStatus"></div>
+          <dl class="verify__facts">
+            <div><dt>Owner</dt><dd id="vOwner" class="mono"></dd></div>
+            <div><dt>Claim index</dt><dd id="vIndex" class="mono"></dd></div>
+            <div><dt>Amount</dt><dd id="vAmount" class="mono"></dd></div>
+            <div><dt>Published root</dt><dd id="vRootPub" class="mono hash"></dd></div>
+            <div><dt>Recomputed root</dt><dd id="vRootMine" class="mono hash"></dd></div>
+            <div><dt>Leaves in tree</dt><dd id="vLeaves" class="mono"></dd></div>
+          </dl>
+          <div class="verify__proof">
+            <h4>Proof <span id="vProofCount"></span></h4>
+            <ol class="verify__hashes" id="vProof"></ol>
+          </div>
+          <p class="verify__cli">Same check from the CLI: <code id="vCli">faucet verify data/claims/epoch-N.json &lt;owner&gt;</code></p>
+        </div>
       </div>
     </div>
 
-    <div class="proof__notes">
-      <article class="note">
-        <h4>Domain-separated leaves</h4>
-        <p>Leaf hashes are prefixed <code>0x00</code>, internal nodes <code>0x01</code>. Without that, a 64-byte "leaf" can be replayed as an internal node and a proof forged for a claim that was never allocated.</p>
-      </article>
-      <article class="note">
-        <h4>No duplicated orphans</h4>
-        <p>An odd node at a level is promoted, never paired with itself. Self-pairing lets one proof validate two different indices — a classic way to claim twice.</p>
-      </article>
-      <article class="note">
-        <h4>Indexed claims</h4>
-        <p>The claim index is inside the leaf hash, so a claim contract can mark index <em>n</em> spent in a bitmap and be certain no second leaf shares it.</p>
-      </article>
-      <article class="note">
-        <h4>Dust is carried, never kept</h4>
-        <p>Anything the drip can't divide evenly rolls into the next epoch's collected total. It is not burned by rounding and it is not quietly retained.</p>
-      </article>
+    <div class="verify__aside">
+      <figure class="tree" id="tree">
+        <figcaption class="tree__cap">
+          <span class="tree__capTitle">How a proof works</span>
+          <span class="tree__capNote">eight-leaf illustration &middot; leaf <b id="treeLeaf">5</b> to root with <b id="treeSibs">3</b> siblings</span>
+        </figcaption>
+        <svg viewBox="0 0 560 260" role="img" aria-label="A Merkle tree with eight leaves; the path from one leaf to the root is highlighted along with the sibling hashes that make up the proof.">
+          <g class="tree__edges" id="treeEdges" stroke-linecap="round"></g>
+          <g class="tree__nodes" id="treeNodes"></g>
+        </svg>
+      </figure>
+
+      <div class="notes-grid">
+        <article class="note">
+          <h4>Why domain-separated leaves</h4>
+          <p>Leaf hashes carry a 0x00 prefix and internal nodes 0x01. Without it a 64-byte leaf can be replayed as an internal node and a proof forged for a claim that was never allocated.</p>
+        </article>
+        <article class="note">
+          <h4>Why odd nodes are promoted</h4>
+          <p>Pairing the last node with itself lets one proof validate two indices. Promoting it instead removes the double-claim.</p>
+        </article>
+        <article class="note">
+          <h4>Why the index is in the leaf</h4>
+          <p>A claim contract can mark index <em>n</em> as spent in a bitmap and be certain no second leaf shares it.</p>
+        </article>
+        <article class="note">
+          <h4>Why time-weighted</h4>
+          <p>Borrowing a balance across a snapshot block costs one slot. Integrating balance over the epoch makes it cost the whole epoch.</p>
+        </article>
+      </div>
     </div>
   </div>
 </section>
 
-<div class="joint joint--right" data-joint aria-hidden="true">
-  <svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
+<div class="joint joint--right" data-joint aria-hidden="true"><svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
     <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
     <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
     <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
@@ -861,25 +840,25 @@
     <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
     <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
     <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg>
-</div>
+  </svg></div>
 
 <!-- ═══════════════════════════════════ LEDGER ══════════════════════════════ -->
 
-<section class="section section--ledger" id="ledger">
+<section class="section" id="ledger">
   <div class="shell">
-    <header class="section__head" data-num="04">
-      <p class="section__kicker"><span class="pipe-tick"></span>04 &mdash; Ledger</p>
-      <h2 class="section__title">Every epoch, <em class="ink">on the record.</em></h2>
+    <header class="section__head section__head--compact" data-num="04">
+      <p class="section__kicker"><span class="pipe-tick"></span>Ledger</p>
+      <h2 class="section__title">Settlements</h2>
       <p class="section__lede">
-        One row per settlement. Collected, split four ways, root published. These rows are generated
-        by the engine into <code>site/data/faucet.json</code> — the page has no server to lie to you with.
+        One row per settled epoch, newest first. Open a row for the slot window, the per-source
+        breakdown, and the claim file.
       </p>
     </header>
 
     <div class="ledger">
       <div class="ledger__head" aria-hidden="true">
         <span class="ledger__headTitle">SETTLEMENT LOG</span>
+        <span class="ledger__headMeta" id="ledgerMeta"></span>
         <span class="ledger__headDots"><i></i><i></i><i></i></span>
       </div>
       <div class="ledger__scroll">
@@ -896,10 +875,11 @@
               <th scope="col">Build</th>
               <th scope="col">Wallets</th>
               <th scope="col">Merkle root</th>
+              <th scope="col"><span class="visually-hidden">Details</span></th>
             </tr>
           </thead>
           <tbody id="ledgerBody">
-            <tr class="ledger__empty"><td colspan="9">Loading epochs&hellip;</td></tr>
+            <tr class="ledger__empty"><td colspan="10">Loading epochs&hellip;</td></tr>
           </tbody>
         </table>
       </div>
@@ -908,150 +888,70 @@
   </div>
 </section>
 
-<div class="joint" data-joint aria-hidden="true">
-  <svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
-    <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
-    <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
-    <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
-    <rect class="joint__water" x="35" y="0" width="10" height="200"/>
-    <rect class="joint__flange" x="14" y="0" width="52" height="14" rx="4"/>
-    <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
-    <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
-    <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg>
-</div>
+<!-- ═══════════════════════════════════ NOTES ═══════════════════════════════ -->
 
-<!-- ═══════════════════════════════════ THE RUN ═════════════════════════════ -->
-
-<section class="section section--build" id="build">
+<section class="section section--notes" id="notes">
   <div class="shell">
-    <header class="section__head" data-num="05">
-      <p class="section__kicker"><span class="pipe-tick"></span>05 &mdash; The Run</p>
-      <h2 class="section__title">Laid out like <em class="ink">a pipe run.</em></h2>
-      <p class="section__lede">Each valve opens when the one before it is proven, not when a date arrives.</p>
+    <header class="section__head section__head--compact" data-num="05">
+      <p class="section__kicker"><span class="pipe-tick"></span>Notes</p>
+      <h2 class="section__title">Things worth knowing <em class="ink">before you buy.</em></h2>
     </header>
 
-    <ol class="run" id="run">
-      <li class="run__stage is-done">
-        <span class="run__valve" aria-hidden="true"><i></i></span>
-        <div class="run__body">
-          <h3>Manifold built <span class="run__tag">shipped</span></h3>
-          <p>Collect / route / distribute engine, largest-remainder allocation, Merkle claims, conservation assertions, and a test suite that tries to make it leak.</p>
-        </div>
-      </li>
-      <li class="run__stage is-done">
-        <span class="run__valve" aria-hidden="true"><i></i></span>
-        <div class="run__body">
-          <h3>Dry runs against synthetic epochs <span class="run__tag">shipped</span></h3>
-          <p><code>faucet cycle --epochs 6</code> settles a full multi-epoch run with carry-forward, and every epoch passes the conservation check.</p>
-        </div>
-      </li>
-      <li class="run__stage is-live">
-        <span class="run__valve" aria-hidden="true"><i></i></span>
-        <div class="run__body">
-          <h3>Launch on Pons <span class="run__tag run__tag--live">next</span></h3>
-          <p>Mint, set the creator fee vault, point the adapters at it. <code>faucet doctor</code> has to come back clean before the first live cycle runs.</p>
-        </div>
-      </li>
-      <li class="run__stage">
-        <span class="run__valve" aria-hidden="true"><i></i></span>
-        <div class="run__body">
-          <h3>Claim front-end</h3>
-          <p>Connect a wallet, the page fetches your proof from the published claim file and submits it. No backend, no allowlist, no form.</p>
-        </div>
-      </li>
-      <li class="run__stage">
-        <span class="run__valve" aria-hidden="true"><i></i></span>
-        <div class="run__body">
-          <h3>Time-weighted index</h3>
-          <p>Replace the largest-holders floor with a streamed balance index so weighting covers every wallet, not just the top accounts.</p>
-        </div>
-      </li>
-      <li class="run__stage">
-        <span class="run__valve" aria-hidden="true"><i></i></span>
-        <div class="run__body">
-          <h3>Hand over the wheel</h3>
-          <p>Move the routing policy on-chain so changing the split requires a transaction anyone can see coming, not a commit.</p>
-        </div>
-      </li>
-    </ol>
-  </div>
-</section>
+    <div class="notes">
+      <div class="notes__col">
+        <h3>What "all fees" means</h3>
+        <p>Every basis point of collected fees goes to one of four destinations the project or its holders own: the burn address, the holder drip, protocol-owned liquidity, and an on-chain build fund. There is no team bucket. Validator fees paid to make those transfers come out of the build fund.</p>
 
-<!-- ═══════════════════════════════════ FAQ ════════════════════════════════ -->
+        <h3>What stops the split changing quietly</h3>
+        <p>Today, a commit. The split is one file, this page renders the same file, and a change shows up in both places and in git history at once. That is honest, but it is still a commit. Moving the policy on-chain so a change costs a visible transaction is the last item on the status list below.</p>
 
-<section class="section section--faq" id="faq">
-  <div class="shell shell--narrow">
-    <header class="section__head" data-num="06">
-      <p class="section__kicker"><span class="pipe-tick"></span>06 &mdash; Service panel</p>
-      <h2 class="section__title">Questions, <em class="ink">answered plainly.</em></h2>
-    </header>
+        <h3>What is actually live</h3>
+        <p>The engine is real, tested, and runs end to end. The token has not launched, so the epochs on this page come from deterministic mock fee sources, and the ledger says so. When the mint and fee vault addresses go into the config, the same code runs against real vaults and this page renders real epochs.</p>
+      </div>
+      <div class="notes__col">
+        <h3>Quiet epochs</h3>
+        <p>If an epoch collects less than 0.01 SOL, nothing settles. Spending 0.005 SOL in transaction fees to move 0.002 SOL is a net loss, so the amount carries forward and the next epoch collects it. The receipt records it as carried, not spent.</p>
 
-    <div class="faq">
-      <details class="faq__item" open>
-        <summary><span class="faq__valve" aria-hidden="true"></span>Does "all fees go back into the project" really mean all of them?</summary>
-        <div class="faq__body"><p>It means every basis point of collected fees is routed to one of four destinations that the project or its holders own: the burn address, the holder drip, protocol-owned liquidity, and an on-chain build fund. There is no team bucket and no outbound wallet that isn't named on this page. Network transaction fees paid to validators to <em>make</em> those transfers are unavoidable and come out of the build fund.</p></div>
-      </details>
+        <h3>Claiming</h3>
+        <p>You claim; the engine does not push. Pushing to thousands of accounts costs more than most drips are worth and fails on accounts that cannot receive. A Merkle claim puts the cost on whoever wants the money, and unclaimed drips stay claimable.</p>
 
-      <details class="faq__item">
-        <summary><span class="faq__valve" aria-hidden="true"></span>What stops the split from being changed quietly?</summary>
-        <div class="faq__body"><p>Right now: the split lives in a single committed file, and this page renders the same numbers the engine settles with, so a change shows up in both places at once and in the commit history. That is honest but it is still a commit. The last item on the run is moving the policy on-chain so a change costs a visible transaction instead.</p></div>
-      </details>
-
-      <details class="faq__item">
-        <summary><span class="faq__valve" aria-hidden="true"></span>Why time-weighted balances instead of a snapshot?</summary>
-        <div class="faq__body"><p>Snapshots are trivially gamed. Borrow a large balance, hold it for one slot across the snapshot, claim, repay. Integrating the balance over the whole epoch makes that attack cost the full epoch instead of one slot, which is the point.</p></div>
-      </details>
-
-      <details class="faq__item">
-        <summary><span class="faq__valve" aria-hidden="true"></span>What happens in an epoch with barely any volume?</summary>
-        <div class="faq__body"><p>Nothing settles. If the collected total is under the settle floor, spending 0.005 SOL in transaction fees to move 0.002 SOL is a net loss, so the whole amount is carried into the next epoch and the receipt records it as carried rather than spent.</p></div>
-      </details>
-
-      <details class="faq__item">
-        <summary><span class="faq__valve" aria-hidden="true"></span>Is the drip automatic or do I have to claim?</summary>
-        <div class="faq__body"><p>You claim. A push distribution to thousands of accounts costs more in transaction fees than most drips are worth, and it fails on accounts that can't receive. A Merkle claim means the cost falls on whoever wants the money, when they want it, and unclaimed drips stay claimable rather than expiring.</p></div>
-      </details>
-
-      <details class="faq__item">
-        <summary><span class="faq__valve" aria-hidden="true"></span>What is actually live right now?</summary>
-        <div class="faq__body"><p>The engine is real, tested and runs end to end; the numbers on this page come from synthetic epochs generated by deterministic mock fee sources, because the token has not launched yet. The moment the mint and fee vault addresses go into the config, the same code runs against real vaults and this page renders real epochs. The ledger labels its source either way.</p></div>
-      </details>
-
-      <details class="faq__item">
-        <summary><span class="faq__valve" aria-hidden="true"></span>Is this financial advice?</summary>
-        <div class="faq__body"><p>No. It's plumbing. This is an experimental crypto project with no promise of return, no guarantee of liquidity, and a real chance of going to zero — that risk is not removed by any of the mechanics on this page. Nothing here is investment advice or an offer of anything. Read the code before you touch it.</p></div>
-      </details>
+        <h3>Risk</h3>
+        <p>This is an experimental token with no promise of value, liquidity, or return, and a real chance of going to zero. None of the mechanics on this page change that. Nothing here is financial advice. Read the code before you touch it.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════════════════════ CTA ════════════════════════════════ -->
+<!-- ═══════════════════════════════════ STATUS ══════════════════════════════ -->
 
-<section class="cta">
-  <div class="cta__pipe" aria-hidden="true">
-    <svg viewBox="0 0 1200 80" preserveAspectRatio="none">
-      <rect x="0" y="26" width="1200" height="28" fill="url(#ctaSkin)"/>
-      <rect x="0" y="32" width="1200" height="3" fill="#ffe9cc" opacity=".3"/>
-      <g fill="url(#ctaSkin)">
-        <rect x="140" y="18" width="24" height="44" rx="5"/>
-        <rect x="520" y="18" width="24" height="44" rx="5"/>
-        <rect x="900" y="18" width="24" height="44" rx="5"/>
-      </g>
-      <defs>
-        <linearGradient id="ctaSkin" x1="0" y1="26" x2="0" y2="54" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#f0c493"/><stop offset=".4" stop-color="#b87333"/><stop offset="1" stop-color="#3d1f09"/>
-        </linearGradient>
-      </defs>
-    </svg>
-  </div>
-  <div class="cta__drips" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-  <div class="shell cta__inner">
-    <h2>The tap is pointed <em class="ink">back inside.</em></h2>
-    <p>Read the engine, run a cycle yourself, then decide.</p>
-    <div class="cta__actions">
-      <a class="btn btn--primary" data-magnet href="https://github.com/frieshimself-cpu/Faucet" rel="noopener">Read the code</a>
-      <a class="btn btn--ghost" data-magnet href="#ledger">Check the ledger</a>
+<section class="section section--status" id="status">
+  <div class="shell">
+    <header class="section__head section__head--compact" data-num="06">
+      <p class="section__kicker"><span class="pipe-tick"></span>Status</p>
+      <h2 class="section__title">Where the project is</h2>
+    </header>
+
+    <div class="status">
+      <table class="status__table">
+        <tbody>
+          <tr><th scope="row">Engine</th><td>v<span data-bind="build.version">0.1.0</span> &middot; <span data-bind="build.tests">42</span> tests passing &middot; zero runtime dependencies</td><td><span class="pill pill--ok">ok</span></td></tr>
+          <tr><th scope="row">Fee sources</th><td>Deterministic mock adapters (pre-launch)</td><td><span class="pill pill--warn">synthetic</span></td></tr>
+          <tr><th scope="row">Mint</th><td><span data-bind="mint.address">not yet minted</span></td><td><span class="pill">unset</span></td></tr>
+          <tr><th scope="row">Fee vaults</th><td>creator vault, LP fee vault</td><td><span class="pill">unset</span></td></tr>
+          <tr><th scope="row">Settlement signing</th><td>Not wired to a key by design; <code>cycle</code> emits intents</td><td><span class="pill">manual</span></td></tr>
+          <tr><th scope="row">Site</th><td>Static, built from <code data-bind="build.short">0000000</code> on <span data-bind="build.branch">main</span>, <span data-bind="build.date">today</span></td><td><span class="pill pill--ok">live</span></td></tr>
+        </tbody>
+      </table>
+
+      <ol class="status__next">
+        <li class="is-done"><span>Engine: collect, route, distribute, prove; conservation asserts; test suite</span></li>
+        <li class="is-done"><span>Multi-epoch dry runs with carry-forward</span></li>
+        <li class="is-done"><span>In-browser verifier, cross-tested against the engine</span></li>
+        <li class="is-live"><span>Launch on Pons; set mint and vault addresses; first live cycle after <code>faucet doctor</code> is clean</span></li>
+        <li><span>Claim front-end with wallet connect, using the verifier above</span></li>
+        <li><span>Streamed balance index so weighting covers every wallet, not the top 20 accounts</span></li>
+        <li><span>Routing policy on-chain, so changing it costs a transaction, not a commit</span></li>
+      </ol>
     </div>
   </div>
 </section>
@@ -1065,25 +965,27 @@
       <span data-bind="project.tagline">Every fee drips back to the people it came from.</span>
     </div>
     <nav class="footer__links" aria-label="Footer">
-      <a href="#loop">The Loop</a>
-      <a href="#split">The Split</a>
-      <a href="#proof">Proof</a>
-      <a href="#ledger">Ledger</a>
+      <a href="/docs">Docs</a>
+      <a href="/changelog">Changelog</a>
+      <a href="data/faucet.json">faucet.json</a>
+      <a href="data/claims/index.json">claim files</a>
       <a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener">GitHub</a>
     </nav>
     <p class="footer__legal">
       Experimental software and an experimental token. No promise of value, liquidity, or return.
-      Not financial advice. Verify everything on-chain before you act on it.
-      <span class="footer__gen" id="footerGenerated"></span>
+      Not financial advice.
     </p>
+    <p class="footer__build mono" id="footerBuild"></p>
   </div>
 </footer>
 
 <script src="scripts/grain.js"></script>
 <script src="scripts/data.js"></script>
+<script src="scripts/merkle.js"></script>
 <script src="scripts/motion.js"></script>
 <script src="scripts/water.js"></script>
 <script src="scripts/flow.js"></script>
+<script src="scripts/verify.js"></script>
 <script src="scripts/main.js"></script>
 </body>
 </html>

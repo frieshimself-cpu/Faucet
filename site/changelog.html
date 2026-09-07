@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Changelog — Robinhood Faucet</title>
+<meta name="description" content="What changed in the Faucet engine and site, by version and commit." />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="/styles/base.css" />
+<link rel="stylesheet" href="/styles/components.css" />
+<link rel="stylesheet" href="/styles/page.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="nav is-stuck">
+  <div class="nav__rail" aria-hidden="true"></div>
+  <div class="shell nav__inner">
+    <a class="brand" href="/" aria-label="Robinhood home">
+      <span class="brand__mark" aria-hidden="true"><img src="/favicon.svg" alt="" width="38" height="38" /></span>
+      <span class="brand__text"><strong>Robinhood</strong><em>$ROBIN</em></span>
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="/#mechanism"><span>Mechanism</span></a>
+      <a href="/#verify"><span>Verify</span></a>
+      <a href="/#ledger"><span>Ledger</span></a>
+      <a href="/docs"><span>Docs</span></a>
+      <a href="/changelog" class="is-active"><span>Changelog</span></a>
+      <a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener"><span>GitHub</span></a>
+    </nav>
+    <a class="btn btn--ghost btn--sm" href="/#verify">Verify a drip</a>
+  </div>
+</header>
+
+<main id="main" class="page">
+  <div class="shell page__grid">
+    <nav class="toc" aria-label="Versions">
+      <span class="toc__title">Versions</span>
+      <a href="#v0-1-0">0.1.0</a>
+    </nav>
+
+    <article class="prose">
+      <h1>Changelog</h1>
+      <p class="lede">Every entry links to the commit it came from. Dates are commit dates, UTC. Versions follow <code>package.json</code>.</p>
+      <p>Pre-launch. The engine runs against deterministic mock fee sources until the mint and vault addresses are set; the site says so wherever it shows numbers.</p>
+
+      <div class="log" id="log">
+        <section class="entry" id="v0-1-0">
+          <div class="entry__meta">
+            <span class="entry__version">0.1.0</span>
+            <span class="entry__date">2026-09-07</span>
+            <span class="entry__sha"><a href="https://github.com/frieshimself-cpu/Faucet/commits/claude/faucet-robinhood-website-21ck7m" rel="noopener">5 commits</a></span>
+          </div>
+          <div>
+            <h2>First working build <span class="tag">engine</span><span class="tag">site</span></h2>
+            <ul>
+              <li><strong>Engine.</strong> Collect, route, distribute, prove. Largest-remainder allocation so outlets sum to input exactly; time-weighted holder drip; Merkle claims with domain-separated leaves, promoted orphans and the index inside the leaf; conservation assertions that throw rather than settle. Zero runtime dependencies. Test suite of 42 cases, including one that loads the browser Merkle implementation and asserts it agrees with the engine byte for byte. <a href="https://github.com/frieshimself-cpu/Faucet/commit/4e2898e" rel="noopener">4e2898e</a></li>
+              <li><strong>CLI.</strong> <code>policy</code>, <code>cycle</code>, <code>verify</code>, <code>doctor</code>. <code>cycle --write-site</code> writes the site's data file and the per-epoch claim files. Settlement signing is intentionally not wired to a key.</li>
+              <li><strong>Site.</strong> Static, no framework. The fixture with a real water simulation; the routing diagram with droplets sampled off the pipe geometry; the dial console; the ledger with expandable epochs; the in-browser drip verifier; the parameters table; docs and this changelog. <a href="https://github.com/frieshimself-cpu/Faucet/commit/ccda773" rel="noopener">ccda773</a>, <a href="https://github.com/frieshimself-cpu/Faucet/commit/8059b56" rel="noopener">8059b56</a></li>
+              <li><strong>Deploy.</strong> Vercel config with the build step as a policy guard, a strict CSP with no inline scripts, uncached data files, and a local server that applies the same headers. <a href="https://github.com/frieshimself-cpu/Faucet/commit/602fbb8" rel="noopener">602fbb8</a></li>
+              <li><strong>Build stamp.</strong> Commit, branch, build time and test count written to <code>data/build.json</code> and shown in every footer.</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </article>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="shell footer__inner">
+    <nav class="footer__links" aria-label="Footer">
+      <a href="/">Home</a><a href="/docs">Docs</a><a href="/data/faucet.json">faucet.json</a><a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener">GitHub</a>
+    </nav>
+    <p class="footer__legal">Experimental software and an experimental token. No promise of value, liquidity, or return. Not financial advice.</p>
+    <p class="footer__build mono" id="footerBuild"></p>
+  </div>
+</footer>
+<script src="/scripts/grain.js"></script>
+<script src="/scripts/page.js"></script>
+</body>
+</html>

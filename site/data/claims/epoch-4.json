@@ -1,0 +1,607 @@
+{
+  "epoch": 4,
+  "root": "0xccf9a6346214d5dce2c984a96d5ab168c1ee349014f204e40e6f13c61a4eaff5",
+  "totalRaw": "44960473",
+  "claims": [
+    {
+      "index": 0,
+      "owner": "Hood000xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "475485"
+    },
+    {
+      "index": 1,
+      "owner": "Hood001xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "290232"
+    },
+    {
+      "index": 2,
+      "owner": "Hood002xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "618152"
+    },
+    {
+      "index": 3,
+      "owner": "Hood003xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "42248"
+    },
+    {
+      "index": 4,
+      "owner": "Hood004xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "248708"
+    },
+    {
+      "index": 5,
+      "owner": "Hood005xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "282941"
+    },
+    {
+      "index": 6,
+      "owner": "Hood006xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "16498"
+    },
+    {
+      "index": 7,
+      "owner": "Hood007xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "538210"
+    },
+    {
+      "index": 8,
+      "owner": "Hood008xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "534114"
+    },
+    {
+      "index": 9,
+      "owner": "Hood009xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "82415"
+    },
+    {
+      "index": 10,
+      "owner": "Hood010xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "647345"
+    },
+    {
+      "index": 11,
+      "owner": "Hood011xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "383578"
+    },
+    {
+      "index": 12,
+      "owner": "Hood012xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "440282"
+    },
+    {
+      "index": 13,
+      "owner": "Hood013xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "601348"
+    },
+    {
+      "index": 14,
+      "owner": "Hood014xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "491458"
+    },
+    {
+      "index": 15,
+      "owner": "Hood015xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "481484"
+    },
+    {
+      "index": 16,
+      "owner": "Hood016xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "570975"
+    },
+    {
+      "index": 17,
+      "owner": "Hood017xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "478289"
+    },
+    {
+      "index": 18,
+      "owner": "Hood018xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "463974"
+    },
+    {
+      "index": 19,
+      "owner": "Hood019xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "60868"
+    },
+    {
+      "index": 20,
+      "owner": "Hood020xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "239573"
+    },
+    {
+      "index": 21,
+      "owner": "Hood021xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "499107"
+    },
+    {
+      "index": 22,
+      "owner": "Hood022xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "500661"
+    },
+    {
+      "index": 23,
+      "owner": "Hood023xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "441279"
+    },
+    {
+      "index": 24,
+      "owner": "Hood024xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "513223"
+    },
+    {
+      "index": 25,
+      "owner": "Hood025xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "126760"
+    },
+    {
+      "index": 26,
+      "owner": "Hood026xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "90902"
+    },
+    {
+      "index": 27,
+      "owner": "Hood027xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "162123"
+    },
+    {
+      "index": 28,
+      "owner": "Hood028xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "453585"
+    },
+    {
+      "index": 29,
+      "owner": "Hood029xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "103584"
+    },
+    {
+      "index": 30,
+      "owner": "Hood030xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "117069"
+    },
+    {
+      "index": 31,
+      "owner": "Hood031xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "360664"
+    },
+    {
+      "index": 32,
+      "owner": "Hood032xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "227602"
+    },
+    {
+      "index": 33,
+      "owner": "Hood033xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "562835"
+    },
+    {
+      "index": 34,
+      "owner": "Hood034xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "125079"
+    },
+    {
+      "index": 35,
+      "owner": "Hood035xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "681088"
+    },
+    {
+      "index": 36,
+      "owner": "Hood036xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "588640"
+    },
+    {
+      "index": 37,
+      "owner": "Hood037xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "526001"
+    },
+    {
+      "index": 38,
+      "owner": "Hood038xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "701259"
+    },
+    {
+      "index": 39,
+      "owner": "Hood039xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "547757"
+    },
+    {
+      "index": 40,
+      "owner": "Hood040xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "341058"
+    },
+    {
+      "index": 41,
+      "owner": "Hood041xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "511113"
+    },
+    {
+      "index": 42,
+      "owner": "Hood042xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "500844"
+    },
+    {
+      "index": 43,
+      "owner": "Hood043xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "176800"
+    },
+    {
+      "index": 44,
+      "owner": "Hood044xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "524242"
+    },
+    {
+      "index": 45,
+      "owner": "Hood045xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "700126"
+    },
+    {
+      "index": 46,
+      "owner": "Hood046xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "176209"
+    },
+    {
+      "index": 47,
+      "owner": "Hood047xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "181945"
+    },
+    {
+      "index": 48,
+      "owner": "Hood048xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "374618"
+    },
+    {
+      "index": 49,
+      "owner": "Hood049xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "504831"
+    },
+    {
+      "index": 50,
+      "owner": "Hood050xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "81064"
+    },
+    {
+      "index": 51,
+      "owner": "Hood051xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "230196"
+    },
+    {
+      "index": 52,
+      "owner": "Hood052xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "670710"
+    },
+    {
+      "index": 53,
+      "owner": "Hood053xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "575443"
+    },
+    {
+      "index": 54,
+      "owner": "Hood054xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "316630"
+    },
+    {
+      "index": 55,
+      "owner": "Hood055xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "257692"
+    },
+    {
+      "index": 56,
+      "owner": "Hood056xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "62395"
+    },
+    {
+      "index": 57,
+      "owner": "Hood057xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "564179"
+    },
+    {
+      "index": 58,
+      "owner": "Hood058xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "23536"
+    },
+    {
+      "index": 59,
+      "owner": "Hood059xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "661845"
+    },
+    {
+      "index": 60,
+      "owner": "Hood060xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "317289"
+    },
+    {
+      "index": 61,
+      "owner": "Hood061xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "366368"
+    },
+    {
+      "index": 62,
+      "owner": "Hood062xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "178990"
+    },
+    {
+      "index": 63,
+      "owner": "Hood063xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "43038"
+    },
+    {
+      "index": 64,
+      "owner": "Hood064xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "588628"
+    },
+    {
+      "index": 65,
+      "owner": "Hood065xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "20449"
+    },
+    {
+      "index": 66,
+      "owner": "Hood066xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "75548"
+    },
+    {
+      "index": 67,
+      "owner": "Hood067xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "250822"
+    },
+    {
+      "index": 68,
+      "owner": "Hood068xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "652178"
+    },
+    {
+      "index": 69,
+      "owner": "Hood069xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "646397"
+    },
+    {
+      "index": 70,
+      "owner": "Hood070xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "127719"
+    },
+    {
+      "index": 71,
+      "owner": "Hood071xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "193449"
+    },
+    {
+      "index": 72,
+      "owner": "Hood072xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "38498"
+    },
+    {
+      "index": 73,
+      "owner": "Hood073xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "673896"
+    },
+    {
+      "index": 74,
+      "owner": "Hood074xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "412496"
+    },
+    {
+      "index": 75,
+      "owner": "Hood075xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "445502"
+    },
+    {
+      "index": 76,
+      "owner": "Hood076xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "629662"
+    },
+    {
+      "index": 77,
+      "owner": "Hood077xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "514879"
+    },
+    {
+      "index": 78,
+      "owner": "Hood078xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "692505"
+    },
+    {
+      "index": 79,
+      "owner": "Hood079xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "111048"
+    },
+    {
+      "index": 80,
+      "owner": "Hood080xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "204455"
+    },
+    {
+      "index": 81,
+      "owner": "Hood081xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "256309"
+    },
+    {
+      "index": 82,
+      "owner": "Hood082xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "20162"
+    },
+    {
+      "index": 83,
+      "owner": "Hood083xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "420029"
+    },
+    {
+      "index": 84,
+      "owner": "Hood084xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "218544"
+    },
+    {
+      "index": 85,
+      "owner": "Hood085xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "471654"
+    },
+    {
+      "index": 86,
+      "owner": "Hood086xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "361863"
+    },
+    {
+      "index": 87,
+      "owner": "Hood087xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "624819"
+    },
+    {
+      "index": 88,
+      "owner": "Hood088xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "609253"
+    },
+    {
+      "index": 89,
+      "owner": "Hood089xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "18605"
+    },
+    {
+      "index": 90,
+      "owner": "Hood090xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "237659"
+    },
+    {
+      "index": 91,
+      "owner": "Hood091xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "474184"
+    },
+    {
+      "index": 92,
+      "owner": "Hood092xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "533425"
+    },
+    {
+      "index": 93,
+      "owner": "Hood093xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "343377"
+    },
+    {
+      "index": 94,
+      "owner": "Hood094xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "297029"
+    },
+    {
+      "index": 95,
+      "owner": "Hood095xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "271847"
+    },
+    {
+      "index": 96,
+      "owner": "Hood096xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "705853"
+    },
+    {
+      "index": 97,
+      "owner": "Hood097xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "208913"
+    },
+    {
+      "index": 98,
+      "owner": "Hood098xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "497491"
+    },
+    {
+      "index": 99,
+      "owner": "Hood099xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "221565"
+    },
+    {
+      "index": 100,
+      "owner": "Hood100xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "189132"
+    },
+    {
+      "index": 101,
+      "owner": "Hood101xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "365805"
+    },
+    {
+      "index": 102,
+      "owner": "Hood102xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "558942"
+    },
+    {
+      "index": 103,
+      "owner": "Hood103xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "344172"
+    },
+    {
+      "index": 104,
+      "owner": "Hood104xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "392361"
+    },
+    {
+      "index": 105,
+      "owner": "Hood105xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "539432"
+    },
+    {
+      "index": 106,
+      "owner": "Hood106xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "391160"
+    },
+    {
+      "index": 107,
+      "owner": "Hood107xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "478433"
+    },
+    {
+      "index": 108,
+      "owner": "Hood108xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "329471"
+    },
+    {
+      "index": 109,
+      "owner": "Hood109xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "554474"
+    },
+    {
+      "index": 110,
+      "owner": "Hood110xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "552241"
+    },
+    {
+      "index": 111,
+      "owner": "Hood111xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "210923"
+    },
+    {
+      "index": 112,
+      "owner": "Hood112xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "507544"
+    },
+    {
+      "index": 113,
+      "owner": "Hood113xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "372918"
+    },
+    {
+      "index": 114,
+      "owner": "Hood114xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "690429"
+    },
+    {
+      "index": 115,
+      "owner": "Hood115xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "228461"
+    },
+    {
+      "index": 116,
+      "owner": "Hood116xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "623653"
+    },
+    {
+      "index": 117,
+      "owner": "Hood117xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "68823"
+    },
+    {
+      "index": 118,
+      "owner": "Hood118xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "677860"
+    },
+    {
+      "index": 119,
+      "owner": "Hood119xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "amountRaw": "154971"
+    }
+  ]
+}

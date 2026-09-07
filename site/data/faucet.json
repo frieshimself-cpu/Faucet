@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-07T16:44:30.693Z",
+  "generatedAt": "2026-09-07T21:49:07.324Z",
   "project": {
     "name": "Robinhood",
     "ticker": "ROBIN",
@@ -60,7 +60,7 @@
         "fromSlot": 249676000,
         "toSlot": 249730000
       },
-      "closedAt": "2026-09-07T16:44:30.682Z",
+      "closedAt": "2026-09-07T21:49:07.306Z",
       "settled": true,
       "collectedRaw": "131739004",
       "collected": "0.1317",
@@ -121,7 +121,7 @@
         "fromSlot": 249730000,
         "toSlot": 249784000
       },
-      "closedAt": "2026-09-07T16:44:30.685Z",
+      "closedAt": "2026-09-07T21:49:07.310Z",
       "settled": true,
       "collectedRaw": "129075170",
       "collected": "0.129",
@@ -182,7 +182,7 @@
         "fromSlot": 249784000,
         "toSlot": 249838000
       },
-      "closedAt": "2026-09-07T16:44:30.687Z",
+      "closedAt": "2026-09-07T21:49:07.313Z",
       "settled": true,
       "collectedRaw": "128238138",
       "collected": "0.1282",
@@ -243,7 +243,7 @@
         "fromSlot": 249838000,
         "toSlot": 249892000
       },
-      "closedAt": "2026-09-07T16:44:30.689Z",
+      "closedAt": "2026-09-07T21:49:07.316Z",
       "settled": true,
       "collectedRaw": "128458681",
       "collected": "0.1284",
@@ -304,7 +304,7 @@
         "fromSlot": 249892000,
         "toSlot": 249946000
       },
-      "closedAt": "2026-09-07T16:44:30.691Z",
+      "closedAt": "2026-09-07T21:49:07.320Z",
       "settled": true,
       "collectedRaw": "121588035",
       "collected": "0.1215",
@@ -365,7 +365,7 @@
         "fromSlot": 249946000,
         "toSlot": 250000000
       },
-      "closedAt": "2026-09-07T16:44:30.692Z",
+      "closedAt": "2026-09-07T21:49:07.323Z",
       "settled": true,
       "collectedRaw": "140886081",
       "collected": "0.1408",

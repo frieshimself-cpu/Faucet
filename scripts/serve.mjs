@@ -51,7 +51,10 @@ const server = createServer(async (req, res) => {
 
   let status = 200;
   try {
-    const info = await stat(path);
+    let info = await stat(path).catch(() => null);
+    // cleanUrls, as on Vercel: /docs serves docs.html.
+    if (!info && !extname(path)) { path = `${path}.html`; info = await stat(path); }
+    if (!info) throw new Error('missing');
     if (info.isDirectory()) path = join(path, 'index.html');
   } catch {
     // Mirror Vercel: a missing route gets the themed 404 page.

@@ -7,7 +7,7 @@ Two things live in this repo:
 | | |
 |---|---|
 | `engine/` | The fee-recycling engine. Collects fees, routes 100% of them into four buckets, builds a Merkle claim tree for the holder drip, and publishes an auditable receipt per epoch. |
-| `site/` | The website. A static page with no backend, rendering the same policy and the same epoch data the engine settles with. |
+| `site/` | The website. Static, no backend: the same policy and epoch data the engine settles with, a ledger with per-epoch detail, an in-browser drip verifier (`scripts/merkle.js`, cross-tested against the engine), docs, and a changelog. Every page carries the commit it was built from. |
 
 The claim the site makes is enforced by code, not by copy: `assertPolicyBalanced()`
 throws unless the routing policy allocates exactly 10,000 basis points, and

@@ -13,9 +13,10 @@
     "faucet": "node dist/src/cli.js",
     "serve": "node scripts/serve.mjs",
     "sync:fallback": "node scripts/sync-fallback.mjs",
-    "cycle": "node dist/src/cli.js cycle --epochs 6 --seed 42 --write-site && npm run sync:fallback",
+    "cycle": "node dist/src/cli.js cycle --epochs 6 --seed 42 --write-site && npm run sync:fallback && npm run build:info",
     "doctor": "node dist/src/cli.js doctor",
-    "policy": "node dist/src/cli.js policy"
+    "policy": "node dist/src/cli.js policy",
+    "build:info": "node scripts/build-info.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

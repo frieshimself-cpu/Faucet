@@ -1,12 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    motion.js — everything that moves but isn't water.
 
-   Boot sequence, film grain, the cursor bead, magnetic buttons, click ripples,
-   scroll-linked reveals, the riser, the section joints, the headline wipe,
-   the ticker, the terminal typewriter and the Merkle proof animation.
-
-   One shared rAF loop drives the per-frame work (bead + scroll readouts), so
-   the page never runs four loops that each cost a frame.
+   Scroll-linked reveals, the pipe joints between sections, the headline
+   wipe, the ticker, the Merkle proof illustration, the caustics on the tile
+   wall, and the nav. One shared rAF loop drives the scroll work.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -16,94 +13,6 @@
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const lerp = (a, b, t) => a + (b - a) * t;
-
-  /* ── boot sequence ─────────────────────────────────────────────────────── */
-
-  function boot() {
-    const el = document.getElementById('boot');
-    if (!el) return Promise.resolve();
-
-    if (reduced.matches) {
-      el.classList.add('is-done', 'is-gone');
-      return Promise.resolve();
-    }
-
-    document.body.style.overflow = 'hidden';
-
-    return new Promise((resolve) => {
-      window.setTimeout(() => {
-        el.classList.add('is-done');
-        document.body.style.overflow = '';
-        resolve();
-        window.setTimeout(() => el.classList.add('is-gone'), 1100);
-      }, 1450);
-    });
-  }
-
-  /* ── cursor bead ───────────────────────────────────────────────────────── */
-
-  const bead = { el: document.getElementById('bead'), x: -60, y: -60, tx: -60, ty: -60, live: false };
-
-  function initBead() {
-    if (!bead.el || !finePointer.matches || reduced.matches) return;
-
-    window.addEventListener('pointermove', (event) => {
-      bead.tx = event.clientX;
-      bead.ty = event.clientY;
-      if (!bead.live) {
-        bead.live = true;
-        bead.x = bead.tx;
-        bead.y = bead.ty;
-        bead.el.classList.add('is-live');
-      }
-    }, { passive: true });
-
-    window.addEventListener('pointerdown', () => bead.el.classList.add('is-hot'));
-    window.addEventListener('pointerup', () => bead.el.classList.remove('is-hot'));
-    document.addEventListener('mouseleave', () => bead.el.classList.remove('is-live'));
-
-    const hot = 'a, button, summary, input, [role="slider"], .dial-card, .loop__outputs li';
-    document.querySelectorAll(hot).forEach((node) => {
-      node.addEventListener('mouseenter', () => bead.el.classList.add('is-hot'));
-      node.addEventListener('mouseleave', () => bead.el.classList.remove('is-hot'));
-    });
-  }
-
-  /* ── magnetic buttons + click ripples ──────────────────────────────────── */
-
-  function initTactile() {
-    if (finePointer.matches && !reduced.matches) {
-      document.querySelectorAll('[data-magnet]').forEach((node) => {
-        node.addEventListener('pointermove', (event) => {
-          const box = node.getBoundingClientRect();
-          const dx = event.clientX - (box.left + box.width / 2);
-          const dy = event.clientY - (box.top + box.height / 2);
-          node.style.setProperty('--mx', `${clamp(dx * 0.22, -14, 14)}px`);
-          node.style.setProperty('--my', `${clamp(dy * 0.32, -10, 10)}px`);
-        });
-        node.addEventListener('pointerleave', () => {
-          node.style.setProperty('--mx', '0px');
-          node.style.setProperty('--my', '0px');
-        });
-      });
-    }
-
-    document.querySelectorAll('.btn, .ca__copy').forEach((node) => {
-      node.addEventListener('pointerdown', (event) => {
-        if (reduced.matches) return;
-        const box = node.getBoundingClientRect();
-        const size = Math.max(box.width, box.height) * 2.4;
-        const drop = document.createElement('span');
-        drop.className = 'ripple';
-        drop.style.width = drop.style.height = `${size}px`;
-        drop.style.left = `${event.clientX - box.left}px`;
-        drop.style.top = `${event.clientY - box.top}px`;
-        node.appendChild(drop);
-        window.setTimeout(() => drop.remove(), 700);
-      });
-    });
-  }
 
   /* ── headline wipe ─────────────────────────────────────────────────────── */
 
@@ -126,8 +35,8 @@
 
   function initReveal() {
     const targets = document.querySelectorAll(
-      '.section__head, .dial-card, .proof__step, .note, .run__stage, .faq__item, ' +
-      '.loop__frame, .loop__panel, .ledger, .stats, .console__seal, .tree, .terminal',
+      '.section__head, .dial-card, .note, .loop__frame, .loop__panel, .ledger, .stats, ' +
+      '.tree, .verify__form, .verify__result, .constants, .notes__col, .status',
     );
 
     targets.forEach((node, i) => {
@@ -149,35 +58,15 @@
     targets.forEach((node) => observer.observe(node));
   }
 
-  /* ── scroll-linked hardware: riser, nav meter, joints, the run ─────────── */
+  /* ── scroll-linked hardware: the joints between sections ──────────────── */
 
   const scrollBits = {
-    riser: document.getElementById('riser'),
-    riserFill: document.getElementById('riserFill'),
-    meterArc: document.getElementById('navMeterArc'),
-    meterNeedle: document.getElementById('navMeterNeedle'),
     joints: Array.from(document.querySelectorAll('[data-joint]')),
-    run: document.getElementById('run'),
     nav: document.getElementById('nav'),
   };
 
-  const METER_ARC = 53.4; /* path length of the little nav gauge */
-
   function paintScroll() {
-    const doc = document.documentElement;
-    const max = doc.scrollHeight - window.innerHeight;
-    const progress = max > 0 ? clamp(window.scrollY / max, 0, 1) : 0;
-
-    if (scrollBits.riserFill) scrollBits.riserFill.style.setProperty('--fill', `${(progress * 100).toFixed(2)}%`);
-    if (scrollBits.riser) scrollBits.riser.classList.toggle('is-live', window.scrollY > 120);
     if (scrollBits.nav) scrollBits.nav.classList.toggle('is-stuck', window.scrollY > 14);
-
-    if (scrollBits.meterArc) {
-      scrollBits.meterArc.style.strokeDashoffset = String(METER_ARC * (1 - progress));
-    }
-    if (scrollBits.meterNeedle) {
-      scrollBits.meterNeedle.style.transform = `rotate(${(-90 + progress * 180).toFixed(1)}deg)`;
-    }
 
     /* Each joint fills as it crosses the viewport, so the water appears to
        travel down the page between sections rather than teleport. */
@@ -187,23 +76,12 @@
       const t = clamp((vh * 0.86 - box.top) / (box.height + vh * 0.24), 0, 1);
       joint.style.setProperty('--fill', t.toFixed(3));
     }
-
-    if (scrollBits.run) {
-      const box = scrollBits.run.getBoundingClientRect();
-      const t = clamp((vh * 0.78 - box.top) / (box.height * 0.82), 0, 1);
-      const stages = scrollBits.run.querySelectorAll('.run__stage');
-      const live = scrollBits.run.querySelector('.run__stage.is-live') || stages[stages.length - 1];
-      const ceiling = live
-        ? live.offsetTop + live.querySelector('.run__valve').offsetHeight / 2 + 12
-        : scrollBits.run.offsetHeight;
-      scrollBits.run.style.setProperty('--run-fill', `${Math.round(Math.min(t * scrollBits.run.offsetHeight, ceiling))}px`);
-    }
   }
 
   /* ── nav active link ───────────────────────────────────────────────────── */
 
   function initNavLinks() {
-    const links = Array.from(document.querySelectorAll('.nav__links a'));
+    const links = Array.from(document.querySelectorAll('.nav__links a')).filter((l) => l.getAttribute('href').startsWith('#'));
     const sections = links.map((l) => document.querySelector(l.getAttribute('href'))).filter(Boolean);
     if (sections.length === 0) return;
 
@@ -218,71 +96,6 @@
     );
 
     sections.forEach((s) => observer.observe(s));
-  }
-
-  /* ── terminal typewriter ───────────────────────────────────────────────── */
-
-  const TERMINAL_SCRIPT = [
-    ['t-dim', '$ '], ['t-cmd', 'faucet'], ['', ' verify out/claims/epoch-3.json '], ['t-str', 'Hood042…'], ['', '\n\n'],
-    ['t-ok', '  proof valid'], ['', '\n'],
-    ['t-key', '  owner  '], ['', 'Hood042xxxxxxxxxxxxxxxxxxxxxxxxxxxx\n'],
-    ['t-key', '  index  '], ['', '42\n'],
-    ['t-key', '  amount '], ['', '0.0006 SOL\n'],
-    ['t-key', '  proof  '], ['', '7 node(s)\n'],
-    ['t-key', '  root   '], ['t-hash', '0x168163ee52ae9bf84eec35874632371dc…'], ['', '\n\n'],
-    ['t-dim', '$ '], ['t-cmd', 'faucet'], ['', ' policy\n\n'],
-    ['t-ok', '  100.00% of collected fees are routed back into the project.'], ['', '\n\n'],
-    ['t-dim', '$ '], ['t-cmd', 'faucet'], ['', ' cycle --epochs 6 --write-site\n\n'],
-    ['t-key', '  collected     '], ['', '0.1282 SOL\n'],
-    ['t-key', '  routing       '], ['', 'buyback 35.00%  drip 35.00%  liq 20.00%  build 10.00%\n'],
-    ['t-key', '  conserved     '], ['t-ok', 'yes'], ['', ' — routed == collected\n'],
-  ];
-
-  function typeTerminal() {
-    const out = document.getElementById('termOut');
-    const caret = document.getElementById('termCaret');
-    if (!out) return;
-
-    if (reduced.matches) {
-      out.innerHTML = TERMINAL_SCRIPT.map(([c, t]) => (c ? `<span class="${c}">${t}</span>` : t)).join('');
-      if (caret) caret.style.display = 'none';
-      return;
-    }
-
-    let token = 0;
-    let char = 0;
-    let node = null;
-
-    function step() {
-      if (token >= TERMINAL_SCRIPT.length) {
-        if (caret) caret.style.opacity = '0.35';
-        return;
-      }
-
-      const [cls, text] = TERMINAL_SCRIPT[token];
-
-      if (char === 0) {
-        node = cls ? document.createElement('span') : document.createTextNode('');
-        if (cls) node.className = cls;
-        out.appendChild(node);
-      }
-
-      char += 1;
-      const slice = text.slice(0, char);
-      if (cls) node.textContent = slice;
-      else node.nodeValue = slice;
-
-      if (char >= text.length) {
-        token += 1;
-        char = 0;
-      }
-
-      /* Newlines pause like a command finishing; characters rattle out fast. */
-      const last = text[Math.max(0, char - 1)];
-      window.setTimeout(step, last === '\n' ? 130 : 11 + Math.random() * 14);
-    }
-
-    step();
   }
 
   /* ── the Merkle tree ───────────────────────────────────────────────────── */
@@ -486,11 +299,6 @@
   let queued = false;
 
   function frame() {
-    if (bead.el && bead.live) {
-      bead.x = lerp(bead.x, bead.tx, 0.22);
-      bead.y = lerp(bead.y, bead.ty, 0.22);
-      bead.el.style.transform = `translate3d(${bead.x}px, ${bead.y}px, 0) translate(-50%, -50%)`;
-    }
     if (queued) {
       paintScroll();
       queued = false;
@@ -541,31 +349,16 @@
       const html = items.map((i) => `<span class="ticker__item">${i}</span>`).join('');
       track.innerHTML = html + html;
     },
-    startTerminal() {
-      const terminal = document.getElementById('terminal');
-      if (!terminal) return;
-      const observer = new IntersectionObserver((entries, obs) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          obs.disconnect();
-          typeTerminal();
-        });
-      }, { threshold: 0.3 });
-      observer.observe(terminal);
-    },
   };
 
   /* ── boot ──────────────────────────────────────────────────────────────── */
 
   function start() {
-    initBead();
-    initTactile();
     initReveal();
     initNavLinks();
     initCopy();
     buildTree();
     initCaustics();
-    window.FaucetMotion.startTerminal();
 
     queued = true;
     paintScroll();
@@ -573,7 +366,7 @@
     window.addEventListener('resize', () => { queued = true; }, { passive: true });
     window.requestAnimationFrame(frame);
 
-    boot().then(initHeadline);
+    initHeadline();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

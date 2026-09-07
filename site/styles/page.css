@@ -1,0 +1,116 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   page — the secondary pages: docs and changelog. A sidebar and a prose column.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.page { padding-block: clamp(2rem, 5vw, 4rem) clamp(4rem, 8vw, 7rem); }
+
+.page__grid {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+
+@media (max-width: 900px) { .page__grid { grid-template-columns: 1fr; } }
+
+.toc {
+  position: sticky;
+  top: 100px;
+  display: grid;
+  gap: 0.2rem;
+  padding: 1rem 0;
+  border-left: 1px solid var(--line);
+}
+
+@media (max-width: 900px) { .toc { position: static; border-left: 0; padding: 0 0 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; } }
+
+.toc__title {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: 0 0 0.5rem 1rem;
+}
+
+.toc a {
+  display: block;
+  padding: 0.35rem 1rem;
+  margin-left: -1px;
+  font-size: 0.86rem;
+  color: var(--muted);
+  border-left: 1px solid transparent;
+  transition: color 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+}
+
+.toc a:hover { color: var(--text); }
+.toc a.is-active { color: var(--water-bright); border-left-color: var(--water); }
+@media (max-width: 900px) { .toc a { border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.8rem; } .toc__title { display: none; } }
+
+.prose { max-width: 74ch; }
+.prose > * + * { margin-top: 1rem; }
+.prose h1 { font-size: clamp(2rem, 1.2rem + 2.8vw, 3.2rem); margin-bottom: 0.6rem; }
+.prose h2 { font-size: 1.55rem; margin-top: 3rem; padding-top: 1.6rem; border-top: 1px solid var(--line); scroll-margin-top: 110px; }
+.prose h3 { font-size: 1.08rem; margin-top: 2rem; }
+.prose p, .prose li { color: var(--text-soft); font-size: 0.98rem; }
+.prose .lede { font-size: 1.12rem; color: var(--text-soft); }
+.prose ul, .prose ol { padding-left: 1.3rem; }
+.prose li + li { margin-top: 0.35rem; }
+.prose strong { color: var(--text); }
+.prose a { color: var(--water-bright); border-bottom: 1px solid var(--water-dim); }
+.prose a:hover { border-bottom-color: var(--water); }
+
+.prose pre {
+  padding: 1rem 1.2rem;
+  border: var(--plate-edge);
+  border-radius: var(--radius);
+  background: #04090a;
+  box-shadow: var(--plate-shadow);
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--text-soft);
+}
+
+.prose pre code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+
+.prose table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.prose th, .prose td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.prose th { font-family: var(--font-mono); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.prose td:first-child { white-space: nowrap; }
+
+.callout {
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(184, 115, 51, 0.4);
+  border-left: 3px solid var(--copper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: rgba(184, 115, 51, 0.07);
+}
+
+.callout--water { border-color: rgba(0, 224, 122, 0.3); border-left-color: var(--water); background: var(--water-wash); }
+.callout p { margin: 0; font-size: 0.92rem; }
+
+/* ── changelog ───────────────────────────────────────────────────────── */
+
+.log { display: grid; gap: 0; }
+
+.entry {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 1.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 700px) { .entry { grid-template-columns: 1fr; gap: 0.6rem; } }
+
+.entry__meta { display: grid; gap: 0.3rem; align-content: start; }
+.entry__version { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--water-bright); }
+.entry__date { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.entry__sha { font-family: var(--font-mono); font-size: 0.7rem; color: var(--copper-lit); }
+.entry__sha a { color: inherit; }
+.entry h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }
+.entry ul { padding-left: 1.2rem; }
+.entry li { color: var(--text-soft); font-size: 0.92rem; }
+.entry li + li { margin-top: 0.3rem; }
+.entry .tag { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.12rem 0.5rem; margin-left: 0.5rem; vertical-align: middle; }
