@@ -40,6 +40,7 @@
 
     return {
       'project.name': data.project.name,
+      'project.nameUpper': data.project.name.toUpperCase(),
       'project.tickerTag': `$${data.project.ticker}`,
       'project.launchpad': data.project.launchpad,
       'project.tagline': data.project.tagline,
@@ -178,6 +179,39 @@
     }
   }
 
+
+  /* ── sparklines ──────────────────────────────────────────────────────── */
+
+  function buildSparklines(data) {
+    const epochs = (data.epochs || []).filter((e) => e.settled);
+    if (epochs.length === 0) return;
+
+    let running = 0;
+    const series = {
+      collected: epochs.map((e) => Number(e.collectedRaw)),
+      drip: epochs.map((e) => Number(e.drip.totalRaw)),
+      burn: epochs.map((e) => Number((e.allocations.find((a) => a.bucket === 'buyback') || {}).amountRaw || 0)),
+      /* Cumulative, so "epochs settled" reads as the staircase it is. */
+      epochs: epochs.map((e) => (running += Number(e.collectedRaw))),
+    };
+
+    document.querySelectorAll('[data-spark]').forEach((node) => {
+      const values = series[node.dataset.spark];
+      if (!values) return;
+      const max = Math.max(...values);
+      const min = Math.min(...values);
+      /* Scale to the range, not to zero: six epochs within 15% of each other
+         would otherwise render as six identical blocks and say nothing. */
+      const span = max - min || 1;
+      node.innerHTML = values
+        .map((v, i) => {
+          const h = values.length === 1 ? 100 : 30 + Math.round(((v - min) / span) * 70);
+          return `<i style="--h:${h}%;--d:${i * 60}ms" title="epoch ${epochs[i].id}"></i>`;
+        })
+        .join('');
+    });
+  }
+
   /* ── ticker ──────────────────────────────────────────────────────────── */
 
   function buildTicker(data) {
@@ -232,6 +266,7 @@
     applyBindings(buildBindings(data));
     initCounters();
     fillTank(data);
+    buildSparklines(data);
     renderLedger(data, source);
     buildTicker(data);
     stampFooter(data, source);

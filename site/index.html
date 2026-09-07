@@ -12,7 +12,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%9A%B0%3C/text%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
 <link rel="stylesheet" href="styles/base.css" />
 <link rel="stylesheet" href="styles/components.css" />
 <link rel="stylesheet" href="styles/scenes.css" />
@@ -120,7 +120,7 @@
 
       <h1 class="hero__title" data-split>
         <span class="line">Every fee</span>
-        <span class="line"><em class="ink-water">drips back</em></span>
+        <span class="line"><em class="ink">drips back</em></span>
         <span class="line">into the project.</span>
       </h1>
 
@@ -149,6 +149,16 @@
     </div>
 
     <div class="hero__fixture">
+      <div class="scene" id="scene">
+        <div class="scene__wall" aria-hidden="true"></div>
+        <canvas class="scene__caustics" id="causticsCanvas" aria-hidden="true"></canvas>
+        <div class="scene__spot" aria-hidden="true"></div>
+        <div class="scene__glow" aria-hidden="true"></div>
+        <div class="scene__plaque" aria-hidden="true">
+          <span class="scene__plaqueName" data-bind="project.nameUpper">ROBINHOOD</span>
+          <span class="scene__plaqueNo">FAUCET N&deg; 001 &middot; SOL</span>
+        </div>
+        <div class="scene__stage">
       <canvas class="fixture__canvas" id="waterCanvas" aria-hidden="true"></canvas>
       <svg class="faucet" id="faucet" viewBox="0 0 470 620" role="img"
            aria-label="A brass wall-mounted faucet dripping into a graduated glass tank">
@@ -327,16 +337,19 @@
         </g>
       </svg>
 
-      <div class="fixture__row">
-        <div class="fixture__panel" role="status" aria-live="polite">
-          <span class="fixture__led" aria-hidden="true"></span>
-          <span class="fixture__label">Flow</span>
-          <span class="fixture__value" id="flowReadout">72%</span>
-          <span class="fixture__hint">drag the handle</span>
         </div>
-        <div class="fixture__panel fixture__panel--total">
-          <span class="fixture__label">Total recycled</span>
-          <span class="fixture__value" id="tankValue">0.0000 SOL</span>
+        <div class="scene__floor" aria-hidden="true"></div>
+        <div class="scene__readouts">
+          <div class="fixture__panel" role="status" aria-live="polite">
+            <span class="fixture__led" aria-hidden="true"></span>
+            <span class="fixture__label">Flow</span>
+            <span class="fixture__value" id="flowReadout">72%</span>
+            <span class="fixture__hint">drag the handle</span>
+          </div>
+          <div class="fixture__panel fixture__panel--total">
+            <span class="fixture__label">Total recycled</span>
+            <span class="fixture__value" id="tankValue">0.0000 SOL</span>
+          </div>
         </div>
       </div>
     </div>
@@ -355,25 +368,25 @@
         <span class="stat__label">Fees recycled</span>
         <span class="stat__value"><span data-count data-bind="totals.recycledNum">0</span> <em>SOL</em></span>
         <span class="stat__note">100% of everything collected</span>
-        <span class="stat__meter" style="--w:100%"></span>
+        <span class="stat__spark" data-spark="collected" aria-hidden="true"></span>
       </li>
       <li class="stat">
         <span class="stat__label">Dripped to holders</span>
         <span class="stat__value"><span data-count data-bind="totals.drippedNum">0</span> <em>SOL</em></span>
         <span class="stat__note"><span data-bind="totals.recipients">0</span> wallets paid</span>
-        <span class="stat__meter" style="--w:35%"></span>
+        <span class="stat__spark" data-spark="drip" aria-hidden="true"></span>
       </li>
       <li class="stat">
         <span class="stat__label">Bought &amp; burned</span>
         <span class="stat__value"><span data-count data-bind="totals.burnedNum">0</span> <em>SOL</em></span>
         <span class="stat__note">supply only goes one way</span>
-        <span class="stat__meter stat__meter--burn" style="--w:35%"></span>
+        <span class="stat__spark stat__spark--burn" data-spark="burn" aria-hidden="true"></span>
       </li>
       <li class="stat">
         <span class="stat__label">Epochs settled</span>
         <span class="stat__value"><span data-count data-bind="totals.epochs">0</span></span>
         <span class="stat__note">every one auditable below</span>
-        <span class="stat__meter stat__meter--build" style="--w:100%"></span>
+        <span class="stat__spark stat__spark--build" data-spark="epochs" aria-hidden="true"></span>
       </li>
     </ul>
     <p class="stats__source" id="statsSource">Reading <code>site/data/faucet.json</code>, written by the engine.</p>
@@ -397,9 +410,9 @@
 
 <section class="section section--loop" id="loop">
   <div class="shell">
-    <header class="section__head">
+    <header class="section__head" data-num="01">
       <p class="section__kicker"><span class="pipe-tick"></span>01 &mdash; Plumbing</p>
-      <h2 class="section__title">One inlet manifold. <span class="ink-water">Four outlets.</span> No hidden taps.</h2>
+      <h2 class="section__title">One inlet manifold, <em class="ink">four outlets.</em> No hidden taps.</h2>
       <p class="section__lede">
         Fees arrive from two places. They land in one manifold, and the manifold has exactly four
         ways out — all of them pointing back inside. There is no fifth pipe, and the engine will
@@ -416,7 +429,7 @@
           <span class="screw screw--br" aria-hidden="true"></span>
 
           <div class="loop__stage">
-            <svg class="flow" id="flowDiagram" viewBox="0 0 1360 640" role="img"
+            <svg class="flow" id="flowDiagram" viewBox="-60 0 1420 640" role="img"
                  aria-label="Fee routing diagram: Pons creator fees and LP trading fees flow into the Faucet manifold, which splits into buyback and burn, holder drip, liquidity, and build fund.">
               <defs>
                 <linearGradient id="pipeSkin" x1="0" y1="0" x2="0" y2="1">
@@ -439,8 +452,8 @@
 
               <!-- casings -->
               <g class="flow__casing" fill="none" stroke="url(#pipeSkin)" stroke-width="30" stroke-linecap="round">
-                <path d="M70 160 H360 C420 160 430 215 430 270 H470"/>
-                <path d="M70 480 H360 C420 480 430 425 430 370 H470"/>
+                <path d="M-60 160 H360 C420 160 430 215 430 270 H470"/>
+                <path d="M-60 480 H360 C420 480 430 425 430 370 H470"/>
                 <path d="M670 260 H740 C800 260 800 100 860 100 H890"/>
                 <path d="M670 295 H760 C820 295 820 240 880 240 H890"/>
                 <path d="M670 345 H760 C820 345 820 400 880 400 H890"/>
@@ -449,8 +462,8 @@
 
               <!-- top specular line on every run -->
               <g class="flow__sheen" fill="none" stroke="#ffe9cc" stroke-width="3" stroke-linecap="round" opacity=".28">
-                <path d="M70 150 H360 C420 150 421 215 421 270 H470"/>
-                <path d="M70 470 H360 C420 470 421 425 421 370 H470"/>
+                <path d="M-60 150 H360 C420 150 421 215 421 270 H470"/>
+                <path d="M-60 470 H360 C420 470 421 425 421 370 H470"/>
                 <path d="M670 250 H740 C792 250 791 90 851 90 H890"/>
                 <path d="M670 285 H760 C812 285 811 230 871 230 H890"/>
                 <path d="M670 335 H760 C812 335 811 390 871 390 H890"/>
@@ -459,8 +472,8 @@
 
               <!-- bore -->
               <g class="flow__bore" fill="none" stroke="#03080a" stroke-width="17" stroke-linecap="round">
-                <path d="M70 160 H360 C420 160 430 215 430 270 H470"/>
-                <path d="M70 480 H360 C420 480 430 425 430 370 H470"/>
+                <path d="M-60 160 H360 C420 160 430 215 430 270 H470"/>
+                <path d="M-60 480 H360 C420 480 430 425 430 370 H470"/>
                 <path d="M670 260 H740 C800 260 800 100 860 100 H890"/>
                 <path d="M670 295 H760 C820 295 820 240 880 240 H890"/>
                 <path d="M670 345 H760 C820 345 820 400 880 400 H890"/>
@@ -470,8 +483,8 @@
               <!-- the water column: the dashed strokes are the body, the canvas
                    above adds discrete droplets riding the same paths -->
               <g class="flow__water" fill="none" stroke-width="10" stroke-linecap="round" filter="url(#flowGlow)">
-                <path id="inA" class="flow__stream" data-bucket="inlet" d="M70 160 H360 C420 160 430 215 430 270 H470"/>
-                <path id="inB" class="flow__stream" data-bucket="inlet" d="M70 480 H360 C420 480 430 425 430 370 H470"/>
+                <path id="inA" class="flow__stream" data-bucket="inlet" d="M-60 160 H360 C420 160 430 215 430 270 H470"/>
+                <path id="inB" class="flow__stream" data-bucket="inlet" d="M-60 480 H360 C420 480 430 425 430 370 H470"/>
                 <path id="outBuyback"   class="flow__stream flow__stream--out" data-bucket="buyback"   d="M670 260 H740 C800 260 800 100 860 100 H890"/>
                 <path id="outDrip"      class="flow__stream flow__stream--out" data-bucket="drip"      d="M670 295 H760 C820 295 820 240 880 240 H890"/>
                 <path id="outLiquidity" class="flow__stream flow__stream--out" data-bucket="liquidity" d="M670 345 H760 C820 345 820 400 880 400 H890"/>
@@ -603,9 +616,9 @@
 
 <section class="section section--split" id="split">
   <div class="shell">
-    <header class="section__head">
+    <header class="section__head" data-num="02">
       <p class="section__kicker"><span class="pipe-tick"></span>02 &mdash; The Split</p>
-      <h2 class="section__title">Four dials. <span class="ink-water">Read them yourself.</span></h2>
+      <h2 class="section__title">Four dials. <em class="ink">Read them yourself.</em></h2>
       <p class="section__lede">
         These numbers live in one file — <code>engine/src/config.ts</code> — and both this page and
         the settlement engine read the same one. If the split changes, it changes here, in the
@@ -761,9 +774,9 @@
 
 <section class="section section--proof" id="proof">
   <div class="shell">
-    <header class="section__head">
+    <header class="section__head" data-num="03">
       <p class="section__kicker"><span class="pipe-tick"></span>03 &mdash; Proof</p>
-      <h2 class="section__title">"Trust me" is <span class="ink-water">not a mechanism.</span></h2>
+      <h2 class="section__title">&ldquo;Trust me&rdquo; is <em class="ink">not a mechanism.</em></h2>
       <p class="section__lede">
         Every epoch publishes a Merkle root over the claim set. Anyone can rebuild the tree from the
         published claim file, check the root matches, and check their own drip is in it — without
@@ -855,9 +868,9 @@
 
 <section class="section section--ledger" id="ledger">
   <div class="shell">
-    <header class="section__head">
+    <header class="section__head" data-num="04">
       <p class="section__kicker"><span class="pipe-tick"></span>04 &mdash; Ledger</p>
-      <h2 class="section__title">Every epoch, <span class="ink-water">on the record.</span></h2>
+      <h2 class="section__title">Every epoch, <em class="ink">on the record.</em></h2>
       <p class="section__lede">
         One row per settlement. Collected, split four ways, root published. These rows are generated
         by the engine into <code>site/data/faucet.json</code> — the page has no server to lie to you with.
@@ -912,9 +925,9 @@
 
 <section class="section section--build" id="build">
   <div class="shell">
-    <header class="section__head">
+    <header class="section__head" data-num="05">
       <p class="section__kicker"><span class="pipe-tick"></span>05 &mdash; The Run</p>
-      <h2 class="section__title">Laid out like <span class="ink-water">a pipe run.</span></h2>
+      <h2 class="section__title">Laid out like <em class="ink">a pipe run.</em></h2>
       <p class="section__lede">Each valve opens when the one before it is proven, not when a date arrives.</p>
     </header>
 
@@ -969,9 +982,9 @@
 
 <section class="section section--faq" id="faq">
   <div class="shell shell--narrow">
-    <header class="section__head">
+    <header class="section__head" data-num="06">
       <p class="section__kicker"><span class="pipe-tick"></span>06 &mdash; Service panel</p>
-      <h2 class="section__title">Questions, <span class="ink-water">answered plainly.</span></h2>
+      <h2 class="section__title">Questions, <em class="ink">answered plainly.</em></h2>
     </header>
 
     <div class="faq">
@@ -1034,7 +1047,7 @@
   </div>
   <div class="cta__drips" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
   <div class="shell cta__inner">
-    <h2>The tap is pointed <span class="ink-water">back inside.</span></h2>
+    <h2>The tap is pointed <em class="ink">back inside.</em></h2>
     <p>Read the engine, run a cycle yourself, then decide.</p>
     <div class="cta__actions">
       <a class="btn btn--primary" data-magnet href="https://github.com/frieshimself-cpu/Faucet" rel="noopener">Read the code</a>

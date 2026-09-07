@@ -223,10 +223,11 @@
 .ticker {
   position: relative;
   margin-top: clamp(2rem, 5vw, 3.5rem);
-  border-block: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(11, 19, 21, 0.9), rgba(4, 8, 10, 0.9));
+  border-block: 1px solid rgba(148, 190, 178, 0.12);
+  background: linear-gradient(180deg, rgba(14, 24, 26, 0.95), rgba(4, 8, 10, 0.95));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.7);
   overflow: hidden;
-  height: 46px;
+  height: 48px;
   display: flex;
   align-items: center;
 }
@@ -259,7 +260,7 @@
 .ticker__item .hash { color: #62a3ff; }
 .ticker__item .burn { color: var(--burn); }
 
-.ticker__fade { position: absolute; top: 0; bottom: 0; width: 90px; pointer-events: none; }
+.ticker__fade { position: absolute; top: 0; bottom: 0; width: 140px; pointer-events: none; }
 .ticker__fade--l { left: 0; background: linear-gradient(90deg, var(--void), transparent); }
 .ticker__fade--r { right: 0; background: linear-gradient(270deg, var(--void), transparent); }
 
@@ -271,14 +272,14 @@
   margin-top: clamp(2.5rem, 5vw, 4rem);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(212px, 1fr));
-  border: 1px solid var(--line);
+  border: var(--plate-edge);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(16, 27, 30, 0.75), rgba(6, 11, 14, 0.6));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  background: var(--plate-bg);
+  box-shadow: var(--plate-shadow);
   overflow: hidden;
 }
 
-.stat { padding: 1.7rem clamp(1.1rem, 2vw, 1.95rem) 1.9rem; border-right: 1px solid var(--line-soft); position: relative; }
+.stat { padding: 1.7rem clamp(1.1rem, 2vw, 1.95rem) 1.4rem; border-right: 1px solid var(--line-soft); position: relative; }
 .stat:last-child { border-right: 0; }
 
 .stat__label {
@@ -311,22 +312,33 @@
 
 .stat__note { display: block; margin-top: 0.6rem; font-size: 0.81rem; color: var(--muted); }
 
-/* A hairline meter along the bottom of each cell, sized to the bucket share. */
-.stat__meter {
-  position: absolute;
-  left: 0; bottom: 0;
-  height: 3px;
-  width: var(--w, 0%);
-  background: linear-gradient(90deg, var(--water-deep), var(--water));
-  box-shadow: 0 0 12px rgba(0, 224, 122, 0.5);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 1.3s var(--ease-fluid) 0.2s;
+/* A sparkline of the last epochs under each figure, so the number has a
+   shape. Bars grow in when the row scrolls into view. */
+.stat__spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 30px;
+  margin-top: 1rem;
+  padding-bottom: 1px;
+  border-bottom: 1px solid var(--line-soft);
 }
 
-.stats.is-in .stat__meter { transform: scaleX(1); }
-.stat__meter--burn  { background: linear-gradient(90deg, #8a3d1c, var(--burn)); box-shadow: 0 0 12px rgba(255, 138, 91, 0.45); }
-.stat__meter--build { background: linear-gradient(90deg, var(--copper-deep), var(--copper-lit)); box-shadow: 0 0 12px rgba(233, 189, 139, 0.35); }
+.stat__spark i {
+  flex: 1 1 0;
+  height: var(--h, 20%);
+  min-height: 2px;
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(180deg, var(--water-bright), var(--water) 40%, var(--water-deep));
+  box-shadow: 0 0 8px rgba(0, 224, 122, 0.35);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.8s var(--ease-fluid) var(--d, 0ms);
+}
+
+.stat__spark--burn i  { background: linear-gradient(180deg, #ffb497, var(--burn) 40%, #8a3d1c); box-shadow: 0 0 8px rgba(255, 138, 91, 0.35); }
+.stat__spark--build i { background: linear-gradient(180deg, var(--copper-pale), var(--copper-lit) 40%, var(--copper-deep)); box-shadow: 0 0 8px rgba(233, 189, 139, 0.3); }
+.stats.is-in .stat__spark i { transform: scaleY(1); }
 
 .stats__source { margin-top: 1rem; font-size: 0.76rem; color: var(--muted); font-family: var(--font-mono); }
 
@@ -404,11 +416,11 @@
 /* ── terminal ────────────────────────────────────────────────────────────── */
 
 .terminal {
-  border: 1px solid var(--line);
+  border: var(--plate-edge);
   border-radius: var(--radius);
   overflow: hidden;
   background: #04090a;
-  box-shadow: 0 30px 70px -34px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: var(--plate-shadow);
   position: relative;
 }
 
@@ -471,10 +483,10 @@
 /* ── ledger ──────────────────────────────────────────────────────────────── */
 
 .ledger {
-  border: 1px solid var(--line);
+  border: var(--plate-edge);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(15, 25, 28, 0.85), rgba(5, 10, 12, 0.85));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: var(--plate-bg);
+  box-shadow: var(--plate-shadow);
   overflow: hidden;
 }
 
@@ -626,9 +638,10 @@
 
 .run__body {
   padding: 1.15rem 1.4rem;
-  border: 1px solid var(--line);
+  border: var(--plate-edge);
   border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--panel-lift), var(--panel));
+  background: var(--plate-bg);
+  box-shadow: var(--plate-shadow);
   transition: border-color 0.3s var(--ease-out), transform 0.3s var(--ease-out);
 }
 
@@ -656,9 +669,10 @@
 .faq { display: grid; gap: 0.7rem; }
 
 .faq__item {
-  border: 1px solid var(--line);
+  border: var(--plate-edge);
   border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--panel-lift), var(--panel));
+  background: var(--plate-bg);
+  box-shadow: var(--plate-shadow);
   overflow: hidden;
   transition: border-color 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
 }

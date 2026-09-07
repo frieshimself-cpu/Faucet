@@ -422,6 +422,78 @@
     observer.observe(document.getElementById('tree'));
   }
 
+
+  /* ── caustics on the tile wall ────────────────────────────────────────────
+     Light refracted through moving water makes a lattice of bright ridges.
+     A sum of three drifting sine fields, raised to a power so only the crests
+     glow, painted at ~80×100 and blurred up by CSS. Cost: negligible.      */
+
+  function initCaustics() {
+    const canvas = document.getElementById('causticsCanvas');
+    const scene = document.getElementById('scene');
+    if (!canvas || !scene || reduced.matches) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = 80;
+    const H = 100;
+    canvas.width = W;
+    canvas.height = H;
+    const image = ctx.createImageData(W, H);
+    const data = image.data;
+
+    let running = false;
+    let raf = 0;
+
+    function paint(now) {
+      if (!running) return;
+      const t = now / 1000;
+      const flow = window.FaucetWater ? window.FaucetWater.getFlow() : 0.7;
+      const gain = 0.35 + flow * 0.65;
+
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const u = x / W;
+          const v = y / H;
+          const a = Math.sin(u * 9.0 + t * 0.9 + Math.sin(v * 5.0 + t * 0.6) * 1.2);
+          const b = Math.sin(v * 11.0 - t * 1.1 + Math.sin(u * 6.0 - t * 0.5) * 1.1);
+          const c = Math.sin((u + v) * 7.5 + t * 0.7);
+          let k = (a + b + c) / 3;            // -1 .. 1
+          k = Math.max(0, k);
+          k = k * k * k;                      // only the crests
+          // Brightest low and to the right, near the tank; fades toward the lamp.
+          const falloff = 0.25 + 0.75 * v * (0.4 + 0.6 * u);
+          const i = (y * W + x) * 4;
+          const lum = Math.min(1, k * 3.2 * gain * falloff);
+          data[i]     = 0;
+          data[i + 1] = 224 * lum;
+          data[i + 2] = 122 * lum;
+          data[i + 3] = 255 * lum;
+        }
+      }
+
+      ctx.putImageData(image, 0, 0);
+      raf = window.requestAnimationFrame(paint);
+    }
+
+    new IntersectionObserver((entries) => {
+      const visible = entries.some((e) => e.isIntersecting);
+      if (visible && !running) {
+        running = true;
+        raf = window.requestAnimationFrame(paint);
+      } else if (!visible) {
+        running = false;
+        window.cancelAnimationFrame(raf);
+      }
+    }, { threshold: 0.05 }).observe(scene);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { running = false; window.cancelAnimationFrame(raf); }
+      else if (!running) { running = true; raf = window.requestAnimationFrame(paint); }
+    });
+  }
+
   /* ── shared frame loop ─────────────────────────────────────────────────── */
 
   let queued = false;
@@ -505,6 +577,7 @@
     initNavLinks();
     initCopy();
     buildTree();
+    initCaustics();
     window.FaucetMotion.startTerminal();
 
     queued = true;
