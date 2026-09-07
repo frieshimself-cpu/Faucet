@@ -90,17 +90,56 @@ explicit step. See [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 
 ---
 
-## Publishing the site
+## Deploying
 
-`site/` is a plain static directory — no build step, no framework, no bundler.
-Point GitHub Pages (Settings → Pages → *Deploy from a branch*, folder `/site`) or
-any static host at it.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ffrieshimself-cpu%2FFaucet)
 
-Served over HTTP the page fetches `data/faucet.json`. Opened straight off disk it
-falls back to the snapshot baked into `site/scripts/data.js`, which
-`npm run sync:fallback` regenerates. The footer says which one you are looking at.
+The repo is Vercel-ready as committed. `vercel.json` tells Vercel three things:
 
----
+| Setting | Value | Why |
+|---|---|---|
+| `outputDirectory` | `site` | The site is a plain static directory. No bundler, no framework. |
+| `buildCommand` | `npm run build && npm run policy` | Typechecks the engine and runs `faucet policy`, which throws unless the split sums to exactly 100%. **A deploy fails if the policy leaks a basis point.** |
+| `headers` | CSP, `nosniff`, `DENY` framing, no-cache on data | The page has no inline scripts, so the CSP is strict. `data/faucet.json` is never cached, so a fresh cycle shows up immediately. |
+
+Two ways to ship it:
+
+**From the dashboard.** Click the button above, or import the repo at
+[vercel.com/new](https://vercel.com/new). Vercel reads `vercel.json`; there is
+nothing to configure. Every push to `main` deploys production; every other
+branch gets a preview URL.
+
+**From the CLI.**
+
+```bash
+npm i -g vercel
+vercel          # preview
+vercel --prod   # production
+```
+
+`npm run serve` applies the same headers `vercel.json` declares, CSP included,
+and serves `404.html` for missing routes — so anything that would break in
+production breaks on `localhost:4173` first.
+
+### Updating the numbers on a deployed site
+
+```bash
+npm run cycle       # regenerates site/data/faucet.json and the bundled fallback
+git commit -am "epoch N"
+git push            # Vercel redeploys
+```
+
+The page reads `data/faucet.json` on load and the header rules keep it
+uncached, so the new epoch is live as soon as the deploy is.
+
+### Any other static host
+
+Point GitHub Pages (Settings → Pages → *Deploy from a branch*, folder `/site`),
+Netlify, Cloudflare Pages, or an S3 bucket at the `site/` directory. Nothing in
+it needs a server. Served over HTTP the page fetches `data/faucet.json`; opened
+straight off disk it falls back to the snapshot baked into
+`site/scripts/data.js`, which `npm run sync:fallback` regenerates. The footer
+says which one you are looking at.
 
 ## Architecture
 

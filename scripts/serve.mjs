@@ -6,12 +6,26 @@
  */
 
 import { createServer } from 'node:http';
-import { createReadStream } from 'node:fs';
+import { createReadStream, readFileSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 
 const ROOT = resolve('site');
 const PORT = Number(process.env.PORT ?? 4173);
+
+/* Serve with the exact headers vercel.json declares (CSP included), so a
+   policy that would break the page in production breaks it here first. */
+const VERCEL = JSON.parse(readFileSync(resolve('vercel.json'), 'utf8'));
+const HEADER_RULES = (VERCEL.headers ?? []).map((rule) => ({
+  test: new RegExp(`^${rule.source.replace(/\(\.\*\)/g, '.*').replace(/\(([^)]+)\)/g, '($1)')}$`),
+  headers: Object.fromEntries(rule.headers.map((h) => [h.key.toLowerCase(), h.value])),
+}));
+
+function headersFor(pathname) {
+  const out = {};
+  for (const rule of HEADER_RULES) if (rule.test.test(pathname)) Object.assign(out, rule.headers);
+  return out;
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -35,17 +49,20 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  let status = 200;
   try {
     const info = await stat(path);
     if (info.isDirectory()) path = join(path, 'index.html');
   } catch {
-    res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
-    return;
+    // Mirror Vercel: a missing route gets the themed 404 page.
+    status = 404;
+    path = join(ROOT, '404.html');
   }
 
-  res.writeHead(200, {
+  res.writeHead(status, {
     'content-type': TYPES[extname(path)] ?? 'application/octet-stream',
     'cache-control': 'no-store',
+    ...headersFor(requested),
   });
   createReadStream(path).pipe(res);
 });

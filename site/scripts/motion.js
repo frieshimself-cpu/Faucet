@@ -18,19 +18,6 @@
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const lerp = (a, b, t) => a + (b - a) * t;
 
-  /* ── film grain ───────────────────────────────────────────────────────────
-     Generated rather than shipped as a PNG: it is ~400 bytes of markup and it
-     scales to any DPI without a second asset.                                */
-
-  (function grain() {
-    const svg =
-      "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'>" +
-      "<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/>" +
-      "<feColorMatrix type='saturate' values='0'/></filter>" +
-      "<rect width='220' height='220' filter='url(%23n)' opacity='0.4'/></svg>";
-    document.documentElement.style.setProperty('--grain-src', `url("data:image/svg+xml,${svg.replace(/"/g, "'")}")`);
-  })();
-
   /* ── boot sequence ─────────────────────────────────────────────────────── */
 
   function boot() {

@@ -1,0 +1,8 @@
+# Only site/ is served; keep the upload small.
+node_modules
+dist
+out
+.env
+.env.*
+docs
+.github

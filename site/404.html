@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dead end — Robinhood</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%9A%B0%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="/styles/base.css" />
+<link rel="stylesheet" href="/styles/components.css" />
+<style>
+  .lost {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 2rem;
+  }
+  .lost__cap {
+    width: 120px; height: 120px;
+    margin: 0 auto 1.6rem;
+  }
+  .lost__code {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.3em;
+    color: var(--copper-lit);
+    margin-bottom: 1rem;
+  }
+  .lost h1 { font-size: clamp(2.2rem, 1.4rem + 4vw, 4rem); margin-bottom: 1rem; }
+  .lost p { color: var(--text-soft); max-width: 44ch; margin: 0 auto 2rem; }
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<main class="lost">
+  <div>
+    <svg class="lost__cap" viewBox="0 0 120 120" aria-hidden="true">
+      <defs>
+        <linearGradient id="cap" x1="0" y1="0" x2="1" y2="1">
+          <stop stop-color="#fdeacd"/><stop offset=".45" stop-color="#b87333"/><stop offset="1" stop-color="#5f3414"/>
+        </linearGradient>
+      </defs>
+      <rect x="20" y="36" width="80" height="48" rx="10" fill="url(#cap)"/>
+      <rect x="30" y="44" width="60" height="32" rx="6" fill="#0a1214" opacity=".55"/>
+      <path d="M44 60 h32" stroke="#fdeacd" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+      <rect x="8" y="48" width="14" height="24" rx="4" fill="url(#cap)"/>
+      <rect x="98" y="48" width="14" height="24" rx="4" fill="url(#cap)"/>
+    </svg>
+    <p class="lost__code">404 &mdash; CAPPED LINE</p>
+    <h1>This pipe goes <em class="ink">nowhere.</em></h1>
+    <p>There is no outlet at this address. Everything that flows is on the main line.</p>
+    <a class="btn btn--primary" href="/">Back to the manifold</a>
+  </div>
+</main>
+<script src="/scripts/grain.js"></script>
+</body>
+</html>

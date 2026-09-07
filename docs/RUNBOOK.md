@@ -29,6 +29,20 @@ Read the printed receipt before you act on it:
 - **drip** — recipient count, distributed amount, carry-out, Merkle root.
 - **settlement** — the intents. Nothing has been broadcast.
 
+## Publishing the new epoch to the site
+
+```bash
+npm run cycle        # or the --live variant above, then npm run sync:fallback
+git commit -am "epoch N settled"
+git push
+```
+
+Vercel redeploys on push. `data/faucet.json` is served with
+`max-age=0, must-revalidate`, so visitors see the new epoch on their next load
+rather than after a cache expires. The build step runs `faucet policy`; if the
+routing policy ever fails to sum to 100%, the deploy fails and the previous
+version stays up.
+
 ## Publishing a drip
 
 1. Publish `out/claims/epoch-N.json` wherever holders can fetch it.
