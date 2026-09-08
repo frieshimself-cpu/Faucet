@@ -3,23 +3,30 @@
  * faucet — command line for the buyback-and-burn engine.
  *
  *   faucet policy                 print the routing policy and prove it sums to 100%
- *   faucet plan                   read the dev wallet, quote the swap, print what would be bought
- *   faucet burn [--execute]       run a cycle; without --execute it is a dry run
+ *   faucet claim [--execute]      claim creator rewards from the Pons fee escrow
+ *   faucet plan                   read the dev wallet, quote the buy, print what would be bought
+ *   faucet burn [--execute]       run one cycle (claim → buy → burn); without --execute it is a dry run
+ *   faucet run                    cycle forever, every 3 minutes
  *   faucet status                 totals from the burn ledger
  *   faucet verify <txhash>        confirm a transaction burned the token
- *   faucet doctor                 check config, RPC and signer
+ *   faucet doctor                 check config, RPC, the launch record and simulate a buy
+ *   faucet reset --yes            empty the ledger and the site data
  *
- * `--mock` runs against an in-memory chain (pre-launch demo and tests).
- * `--execute` is the only flag that spends anything, and only with a signer.
+ * `--mock` runs against an in-memory chain and writes under .faucet-mock/,
+ * never into site/data. `--execute` is the only flag that spends anything,
+ * and only with a signer.
  */
 
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { execute, plan, readyForLive } from './buyback.js';
+import { rm } from 'node:fs/promises';
+import { claimRewards, execute, plan, readyForLive, routeFor } from './buyback.js';
 import { CONFIG, assertPolicyBalanced, missingForLive, type FaucetConfig } from './config.js';
-import { EthersChain, MockChain, tokensTransferredTo, type Chain } from './evm.js';
-import { LEDGER_PATH, SITE_DATA_PATH, assertReceiptConserved, formatAmount, loadLedger, saveLedger, toSiteData, writeJson } from './ledger.js';
-import { renderPlan, renderReceipt } from './report.js';
+import { EthersChain, MockChain, type Chain } from './evm.js';
+import {
+  LEDGER_PATH, MOCK_LEDGER_PATH, MOCK_SITE_DATA_PATH, SITE_DATA_PATH,
+  assertReceiptConserved, emptyLedger, formatAmount, loadLedger, saveLedger, toSiteData, writeJson,
+} from './ledger.js';
+import { describeRoute, renderClaim, renderPlan, renderReceipt } from './report.js';
+import { run as runLoop } from './runner.js';
 import type { Address, BurnReceipt } from './types.js';
 
 const ESC = String.fromCharCode(27);
@@ -29,6 +36,7 @@ const dim = paint('2');
 const green = paint('32');
 const red = paint('31');
 const bold = paint('1');
+const out = (text: string): void => { process.stdout.write(text); };
 
 const flag = (argv: readonly string[], name: string): boolean => argv.includes(`--${name}`);
 const option = (argv: readonly string[], name: string): string | undefined => {
@@ -47,8 +55,6 @@ const numberOption = (argv: readonly string[], name: string, fallback: number): 
 const MOCK = {
   wallet: '0x1111111111111111111111111111111111111111' as Address,
   token: '0x2222222222222222222222222222222222222222' as Address,
-  router: '0x3333333333333333333333333333333333333333' as Address,
-  weth: '0x4444444444444444444444444444444444444444' as Address,
 };
 
 function usage(): string {
@@ -56,24 +62,34 @@ function usage(): string {
     `${bold('faucet')} — every creator reward buys the coin back and burns it`,
     '',
     '  faucet policy                       show the routing policy',
+    '  faucet claim [--execute] [--mock]   claim creator rewards from the Pons fee escrow',
     '  faucet plan [--mock]                read the wallet and quote the buyback (no spend)',
-    '  faucet burn [--execute] [--mock]    run a cycle; --execute sends the swap',
+    '  faucet burn [--execute] [--mock]    one cycle: claim, buy, burn; --execute sends',
     '              [--rounds N] [--write-site]',
+    '  faucet run [--every S] [--mock]     cycle forever (default every 180s)',
+    '             [--commit-every M]        commit + push the ledger at most every M minutes',
     '  faucet status                       totals from the burn ledger',
     '  faucet verify <txhash>              confirm a tx burned the token',
-    '  faucet doctor                       check config, RPC and signer',
+    '  faucet doctor                       check config, RPC, launch record; simulate a buy',
+    '  faucet reset --yes                  empty the ledger and the site data',
     '',
   ].join('\n');
 }
 
-async function liveChain(config: FaucetConfig, needSigner: boolean): Promise<EthersChain> {
+function liveChain(config: FaucetConfig, needSigner: boolean): EthersChain {
   const missing = missingForLive(config);
   if (missing.length > 0) throw new Error(`not configured for live: set ${missing.join(', ')}`);
   const privateKey = process.env['FAUCET_DEV_WALLET_KEY'];
-  if (needSigner && !privateKey) throw new Error('set FAUCET_DEV_WALLET_KEY to execute a buyback');
-  const chain = new EthersChain({ rpcUrl: config.chain.rpcUrl!, chainId: config.chain.chainId!, privateKey });
-  if (needSigner && chain.signer && chain.signer.toLowerCase() !== config.devWallet!.toLowerCase()) {
-    throw new Error(`signer ${chain.signer} is not the configured dev wallet ${config.devWallet}`);
+  if (needSigner && !privateKey) throw new Error('set FAUCET_DEV_WALLET_KEY to execute');
+  const chain = new EthersChain({
+    rpcUrl: config.chain.rpcUrl, chainId: config.chain.chainId, privateKey,
+    contracts: {
+      factory: config.pons.factory, feeEscrow: config.pons.feeEscrow, hook: config.pons.hook,
+      universalRouter: config.uniswapV4.universalRouter, quoter: config.uniswapV4.quoter, stateView: config.uniswapV4.stateView,
+    },
+  });
+  if (chain.signer && chain.signer.toLowerCase() !== config.devWallet!.toLowerCase()) {
+    throw new Error(`the key in FAUCET_DEV_WALLET_KEY is for ${chain.signer}, not the configured dev wallet ${config.devWallet}`);
   }
   return chain;
 }
@@ -83,11 +99,12 @@ function mockChain(seed: number): MockChain {
     wallet: MOCK.wallet,
     token: MOCK.token,
     burnAddress: CONFIG.burnAddress,
-    balance: 0n,
+    balance: CONFIG.limits.gasReserveWei,
     tokensPerWei: 42_000n + BigInt(seed % 7) * 500n,
     impactPer1e18: 30_000_000_000_000_000n,
     totalSupply: 1_000_000_000n * 10n ** 18n,
     executionDriftBps: 40,
+    gasPrice: 300_000_000n,
   });
 }
 
@@ -96,27 +113,49 @@ function mockReward(seed: number, round: number): bigint {
   let s = ((seed + 1) * 2_654_435_761 + round * 40_503) >>> 0;
   s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
   const r = (s >>> 0) / 0xffff_ffff;
-  return BigInt(Math.floor(8e15 + r * 60e15)); // 0.008 – 0.068 ETH
+  return BigInt(Math.floor(3e15 + r * 40e15)); // 0.003 – 0.043 ETH
 }
 
 async function cmdPolicy(config: FaucetConfig): Promise<void> {
   assertPolicyBalanced(config.routing);
-  process.stdout.write(`\n  ${bold(`${config.project.name} ($${config.project.ticker})`)} on ${config.project.chain} via ${config.project.launchpad}\n`);
-  process.stdout.write(`  ${dim(config.project.tagline)}\n\n`);
+  out(`\n  ${bold(`${config.project.name} ($${config.project.ticker})`)} on ${config.project.chain} via ${config.project.launchpad}\n`);
+  out(`  ${dim(config.project.tagline)}\n\n`);
   for (const rule of config.routing.rules) {
-    process.stdout.write(`  ${'#'.repeat(40)} ${(rule.bps / 100).toFixed(2).padStart(6)}%  ${bold(rule.label)}\n`);
-    process.stdout.write(`  ${' '.repeat(49)}${dim(rule.intent)}\n\n`);
+    out(`  ${'#'.repeat(40)} ${(rule.bps / 100).toFixed(2).padStart(6)}%  ${bold(rule.label)}\n`);
+    out(`  ${' '.repeat(49)}${dim(rule.intent)}\n\n`);
   }
-  process.stdout.write(`  recipient  ${config.burnAddress}\n`);
-  process.stdout.write(`  ${green('100.00% of creator rewards are routed to buyback and burn.')}\n\n`);
+  out(`  source     Pons fee escrow ${config.pons.feeEscrow}\n`);
+  out(`  recipient  ${config.burnAddress}\n`);
+  out(`  ${green('100.00% of creator rewards are routed to buyback and burn.')}\n\n`);
+}
+
+async function cmdClaim(config: FaucetConfig, argv: readonly string[]): Promise<void> {
+  const mock = flag(argv, 'mock');
+  const exec = flag(argv, 'execute');
+  const chain: Chain = mock ? mockChain(7) : liveChain(config, exec);
+  const wallet = mock ? MOCK.wallet : config.devWallet!;
+  if (mock) (chain as MockChain).accrue(mockReward(7, 1));
+
+  const claimable = await chain.claimable(wallet);
+  out(`\n  claimable in the Pons fee escrow for ${wallet}: ${bold(`${formatAmount(claimable, config.native, 6)} ${config.native.symbol}`)}\n`);
+  if (!exec) { out(`  ${dim('dry run — pass --execute to claim')}\n\n`); return; }
+
+  const result = await claimRewards(mock ? { config, chain, ...MOCK, mode: 'mock' } : { config, chain, mode: 'live' });
+  out(`\n${renderClaim(result, config)}\n\n`);
+  if (result.ok && !mock) {
+    const ledger = await loadLedger();
+    ledger.claims.push(result.receipt);
+    await saveLedger(ledger);
+    out(`  wrote ${LEDGER_PATH}\n\n`);
+  }
 }
 
 async function cmdPlan(config: FaucetConfig, argv: readonly string[]): Promise<void> {
   const mock = flag(argv, 'mock');
-  const chain: Chain = mock ? mockChain(7) : await liveChain(config, false);
+  const chain: Chain = mock ? mockChain(7) : liveChain(config, false);
   if (mock) (chain as MockChain).credit(mockReward(7, 1));
   const result = await plan(mock ? { config, chain, ...MOCK } : { config, chain });
-  process.stdout.write(`\n${renderPlan(result, config)}\n\n`);
+  out(`\n${renderPlan(result, config)}\n\n`);
 }
 
 async function cmdBurn(config: FaucetConfig, argv: readonly string[]): Promise<void> {
@@ -124,75 +163,125 @@ async function cmdBurn(config: FaucetConfig, argv: readonly string[]): Promise<v
   const exec = flag(argv, 'execute');
   const rounds = mock ? Math.max(1, Math.floor(numberOption(argv, 'rounds', 1))) : 1;
   const seed = Math.floor(numberOption(argv, 'seed', 7));
+  const ledgerPath = mock ? MOCK_LEDGER_PATH : LEDGER_PATH;
+  const sitePath = mock ? MOCK_SITE_DATA_PATH : SITE_DATA_PATH;
 
   if (!mock && !readyForLive(config)) {
     throw new Error(`not configured for live: set ${missingForLive(config).join(', ')} (or pass --mock)`);
   }
 
-  const chain: Chain = mock ? mockChain(seed) : await liveChain(config, exec);
-  const ledger = await loadLedger();
-  if (mock) ledger.receipts = ledger.receipts.filter((r) => r.mode !== 'mock');
+  const chain: Chain = mock ? mockChain(seed) : liveChain(config, exec);
+  const ledger = mock ? emptyLedger() : await loadLedger(ledgerPath);
   const receipts: BurnReceipt[] = [];
+  const mode = mock ? 'mock' : 'live';
 
   for (let round = 1; round <= rounds; round++) {
-    if (mock) (chain as MockChain).credit(mockReward(seed, round));
+    if (mock) (chain as MockChain).accrue(mockReward(seed, round));
+
+    let claimTx: string | null = null;
+    if (exec) {
+      const claimed = await claimRewards(mock ? { config, chain, ...MOCK, mode } : { config, chain, mode });
+      out(`\n${renderClaim(claimed, config)}\n`);
+      if (claimed.ok) { ledger.claims.push(claimed.receipt); claimTx = claimed.receipt.txHash; }
+    } else {
+      const claimable = await chain.claimable(mock ? MOCK.wallet : config.devWallet!);
+      out(`\n  claimable in the fee escrow: ${formatAmount(claimable, config.native, 6)} ${config.native.symbol}  ${dim('(dry run: not claimed; the plan below covers the wallet balance only)')}\n`);
+    }
 
     const result = await plan(mock ? { config, chain, ...MOCK } : { config, chain });
-    process.stdout.write(`\n${renderPlan(result, config)}\n`);
+    out(`\n${renderPlan(result, config)}\n`);
     if (!result.ok) continue;
 
     if (!exec) {
-      process.stdout.write(`\n  ${dim('dry run — pass --execute to send this swap')}\n`);
+      out(`\n  ${dim('dry run — pass --execute to send this buy')}\n`);
       continue;
     }
 
-    const id = ledger.receipts.length + receipts.length + 1;
+    const id = ledger.receipts.length + 1;
     const receipt = await execute(
       mock
-        ? { config, chain, plan: result.plan, id, mode: 'mock', router: MOCK.router, token: MOCK.token }
-        : { config, chain, plan: result.plan, id, mode: 'live' },
+        ? { config, chain, plan: result.plan, id, mode: 'mock', token: MOCK.token, claimTx }
+        : { config, chain, plan: result.plan, id, mode: 'live', claimTx },
     );
     assertReceiptConserved(receipt);
     receipts.push(receipt);
-    process.stdout.write(`\n${renderReceipt(receipt, config)}\n`);
+    ledger.receipts.push(receipt);
+    out(`\n${renderReceipt(receipt, config)}\n`);
   }
 
-  if (receipts.length > 0) {
-    ledger.receipts.push(...receipts);
-    await saveLedger(ledger);
-    process.stdout.write(`\n  wrote ${LEDGER_PATH} (${ledger.receipts.length} receipts)\n`);
+  if (exec && (receipts.length > 0 || ledger.claims.length > 0)) {
+    await saveLedger(ledger, ledgerPath);
+    out(`\n  wrote ${ledgerPath} (${ledger.receipts.length} burns, ${ledger.claims.length} claims)\n`);
   }
 
   if (flag(argv, 'write-site')) {
-    const supply = mock
-      ? await chain.tokenTotalSupply(MOCK.token)
-      : config.token.address ? await chain.tokenTotalSupply(config.token.address) : null;
-    await writeJson(SITE_DATA_PATH, toSiteData(config, ledger, supply));
-    process.stdout.write(`  wrote ${SITE_DATA_PATH}\n`);
+    const supply = await chain.tokenTotalSupply(mock ? MOCK.token : config.token.address!);
+    await writeJson(sitePath, toSiteData(config, ledger, supply));
+    out(`  wrote ${sitePath}\n`);
   }
 
   const eth = receipts.reduce((s, r) => s + r.ethSpent, 0n);
   const tok = receipts.reduce((s, r) => s + r.tokensBurned, 0n);
   if (receipts.length > 0) {
-    process.stdout.write(
+    out(
       `\n  ${bold(green(`${formatAmount(eth, config.native, 6)} ${config.native.symbol}`))} spent, ` +
         `${bold(green(`${formatAmount(tok, config.token, 2)} ${config.token.symbol}`))} burned across ${receipts.length} cycle(s)` +
         (mock ? `  ${dim('(mock chain)')}` : '') + '\n\n',
     );
   } else {
-    process.stdout.write('\n');
+    out('\n');
   }
+}
+
+async function cmdRun(config: FaucetConfig, argv: readonly string[]): Promise<void> {
+  const mock = flag(argv, 'mock');
+  const every = Math.max(15, Math.floor(numberOption(argv, 'every', config.limits.intervalSeconds)));
+  const commitEvery = Math.max(0, Math.floor(numberOption(argv, 'commit-every', 0)));
+  const seed = Math.floor(numberOption(argv, 'seed', 7));
+  const maxTicks = Math.floor(numberOption(argv, 'ticks', 0)); // 0 = forever; tests and demos use it
+
+  if (!mock && !readyForLive(config)) {
+    throw new Error(`not configured for live: set ${missingForLive(config).join(', ')} (or pass --mock)`);
+  }
+
+  const chain: Chain = mock ? mockChain(seed) : liveChain(config, true);
+  out(
+    `\n  ${bold('faucet run')}  every ${every}s  ${mock ? dim('(mock chain)') : `wallet ${config.devWallet}`}` +
+      (commitEvery ? `  commit every ${commitEvery}m` : '') +
+      `\n  ${dim('each cycle: claim from the Pons fee escrow → buy → burn. ctrl-c to stop.')}\n\n`,
+  );
+
+  let stopResolve: () => void = () => {};
+  const stop = new Promise<void>((resolve) => { stopResolve = resolve; });
+  process.once('SIGINT', () => { out('\n  stopping after this tick\n'); stopResolve(); });
+  process.once('SIGTERM', () => stopResolve());
+
+  let ticks = 0;
+  const result = await runLoop(
+    {
+      config, chain, intervalSeconds: every, mode: mock ? 'mock' : 'live',
+      ...(mock
+        ? { overrides: MOCK, paths: { ledger: MOCK_LEDGER_PATH, site: MOCK_SITE_DATA_PATH }, beforeTick: (n: number) => { (chain as MockChain).accrue(mockReward(seed, n)); } }
+        : {}),
+      commitEveryMinutes: mock ? 0 : commitEvery,
+      onTick: () => { ticks += 1; if (maxTicks > 0 && ticks >= maxTicks) stopResolve(); },
+    },
+    stop,
+  );
+
+  out(`\n  ${result.burns} burn(s), ${result.claims} claim(s), ${result.failures} failure(s)\n\n`);
 }
 
 async function cmdStatus(config: FaucetConfig): Promise<void> {
   const ledger = await loadLedger();
   const data = toSiteData(config, ledger, null);
-  process.stdout.write(`\n  burns          ${data.totals.burns}\n`);
-  process.stdout.write(`  ${config.native.symbol} spent      ${data.totals.ethSpent}\n`);
-  process.stdout.write(`  ${config.token.symbol} burned   ${data.totals.tokensBurned}\n`);
-  process.stdout.write(`  gas            ${data.totals.gas} ${config.native.symbol}\n`);
-  process.stdout.write(`  last burn      ${data.totals.lastBurnAt ?? '—'}\n`);
-  process.stdout.write(`  mode           ${data.mode}\n\n`);
+  out(`\n  claims         ${data.totals.claims}  (${data.totals.claimed} ${config.native.symbol} from the fee escrow)\n`);
+  out(`  burns          ${data.totals.burns}\n`);
+  out(`  ${config.native.symbol} spent      ${data.totals.ethSpent}\n`);
+  out(`  ${config.token.symbol} burned   ${data.totals.tokensBurned}\n`);
+  out(`  gas            ${data.totals.gas} ${config.native.symbol}\n`);
+  out(`  last burn      ${data.totals.lastBurnAt ?? '—'}\n`);
+  out(`  mode           ${data.mode}\n\n`);
 }
 
 async function cmdVerify(config: FaucetConfig, argv: readonly string[]): Promise<void> {
@@ -200,11 +289,11 @@ async function cmdVerify(config: FaucetConfig, argv: readonly string[]): Promise
   if (!hash || !/^0x[0-9a-fA-F]{64}$/.test(hash)) throw new Error('usage: faucet verify <txhash>');
   if (!config.token.address) throw new Error('set FAUCET_TOKEN to verify against the token contract');
 
-  const chain = await liveChain(config, false);
+  const chain = liveChain(config, false);
   const receipt = await chain.receipt(hash, config.token.address, config.burnAddress);
   const ok = receipt.status === 'success' && receipt.tokensToBurn > 0n;
 
-  process.stdout.write(
+  out(
     `\n  ${ok ? green('burn confirmed') : red('not a burn')}\n` +
       `  tx       ${hash}\n  status   ${receipt.status}\n  block    ${receipt.block}\n` +
       `  burned   ${formatAmount(receipt.tokensToBurn, config.token, 2)} ${config.token.symbol} → ${config.burnAddress}\n\n`,
@@ -212,40 +301,102 @@ async function cmdVerify(config: FaucetConfig, argv: readonly string[]): Promise
   if (!ok) process.exitCode = 1;
 }
 
+async function cmdReset(argv: readonly string[]): Promise<void> {
+  if (!flag(argv, 'yes')) throw new Error('faucet reset empties site/data; pass --yes to confirm');
+  await saveLedger(emptyLedger(), LEDGER_PATH);
+  await writeJson(SITE_DATA_PATH, toSiteData(CONFIG, emptyLedger(), null));
+  await rm('.faucet-mock', { recursive: true, force: true });
+  out(`\n  reset ${LEDGER_PATH} and ${SITE_DATA_PATH}: 0 burns, 0 claims\n\n`);
+}
+
 async function cmdDoctor(config: FaucetConfig): Promise<void> {
   const checks: Array<[string, boolean, string]> = [];
-  try { assertPolicyBalanced(config.routing); checks.push(['routing policy sums to 100%', true, '']); }
-  catch (e) { checks.push(['routing policy sums to 100%', false, String(e)]); }
+  const check = (label: string, ok: boolean, hint = ''): void => { checks.push([label, ok, hint]); };
+  const eth = config.native;
 
-  for (const [name, set] of [
-    ['FAUCET_RPC_URL', !!config.chain.rpcUrl], ['FAUCET_CHAIN_ID', config.chain.chainId !== null],
-    ['FAUCET_TOKEN', !!config.token.address], ['FAUCET_DEV_WALLET', !!config.devWallet],
-    ['FAUCET_ROUTER', !!config.dex.router], ['FAUCET_WETH', !!config.dex.weth],
-  ] as const) checks.push([`${name} set`, set, set ? '' : 'see .env.example']);
+  try { assertPolicyBalanced(config.routing); check('routing policy sums to 100%', true); }
+  catch (e) { check('routing policy sums to 100%', false, String(e)); }
 
-  checks.push(['FAUCET_DEV_WALLET_KEY set (needed only to execute)', !!process.env['FAUCET_DEV_WALLET_KEY'], '']);
+  check(`chain ${config.project.chain} (id ${config.chain.chainId}) via ${config.chain.rpcUrl}`, true);
+  check('FAUCET_TOKEN set', !!config.token.address, config.token.address ? '' : 'the token contract address');
+  check('FAUCET_DEV_WALLET set', !!config.devWallet, config.devWallet ? '' : 'the wallet Pons credits creator rewards to');
+  const hasKey = !!process.env['FAUCET_DEV_WALLET_KEY'];
+  check(hasKey ? 'FAUCET_DEV_WALLET_KEY set' : 'FAUCET_DEV_WALLET_KEY not set (reads only; needed to claim and buy)', true);
 
-  if (readyForLive(config)) {
+  const probeChain = new EthersChain({
+    rpcUrl: config.chain.rpcUrl, chainId: config.chain.chainId,
+    contracts: { factory: config.pons.factory, feeEscrow: config.pons.feeEscrow, hook: config.pons.hook, universalRouter: config.uniswapV4.universalRouter, quoter: config.uniswapV4.quoter, stateView: config.uniswapV4.stateView },
+  });
+
+  try {
+    const id = await probeChain.chainId();
+    check(`RPC reachable, chain id ${id}`, id === config.chain.chainId, id === config.chain.chainId ? '' : `expected ${config.chain.chainId}`);
+    const gasPrice = await probeChain.gasPrice();
+    const buyGas = 160_000n * gasPrice;
+    check(`gas price ${formatAmount(gasPrice, { address: null, symbol: 'gwei', decimals: 9 }, 4)} gwei; a buy costs ~${formatAmount(buyGas, eth, 8)} ${eth.symbol}, reserve is ${formatAmount(config.limits.gasReserveWei, eth, 6)}`, buyGas * 3n <= config.limits.gasReserveWei, 'raise FAUCET_GAS_RESERVE_WEI');
+  } catch (e) {
+    check('RPC reachable', false, e instanceof Error ? e.message : String(e));
+  }
+
+  if (config.token.address) {
+    const token = config.token.address;
     try {
-      const chain = await liveChain(config, false);
-      const id = await chain.chainId();
-      checks.push([`RPC reachable, chain id ${id}`, id === config.chain.chainId, id === config.chain.chainId ? '' : `expected ${config.chain.chainId}`]);
-      const bal = await chain.balance(config.devWallet!);
-      checks.push([`dev wallet balance ${formatAmount(bal, config.native, 6)} ${config.native.symbol}`, true, '']);
-      const supply = await chain.tokenTotalSupply(config.token.address!);
-      checks.push([`token total supply ${formatAmount(supply, config.token, 0)} ${config.token.symbol}`, supply > 0n, '']);
-      const quote = await chain.quote(config.dex.router!, 10n ** 15n, [config.dex.weth!, config.token.address!]);
-      checks.push([`router quotes 0.001 ${config.native.symbol} → ${formatAmount(quote, config.token, 2)} ${config.token.symbol}`, quote > 0n, '']);
+      const symbol = await probeChain.tokenSymbol(token);
+      const supply = await probeChain.tokenTotalSupply(token);
+      check(`token ${symbol}, total supply ${formatAmount(supply, config.token, 0)}`, supply > 0n, symbol === config.token.symbol ? '' : `config says ${config.token.symbol}; set FAUCET_TOKEN_SYMBOL`);
     } catch (e) {
-      checks.push(['RPC / contracts reachable', false, e instanceof Error ? e.message : String(e)]);
+      check('token contract responds', false, e instanceof Error ? e.message : String(e));
+    }
+
+    try {
+      const launch = await probeChain.launch(token);
+      check('token is a Pons v2 launch (factory has a record)', launch.exists, launch.exists ? '' : 'not found on the Pons v2 factory; is this a Pons v1 launch or a different chain?');
+      if (launch.exists) {
+        check(`paired with ${launch.pairToken === '0x0000000000000000000000000000000000000000' ? 'native ETH' : launch.pairToken}`, launch.pairToken === '0x0000000000000000000000000000000000000000', 'the engine buys with ETH only');
+        check(`phase: ${launch.graduated ? `graduated, v4 pool liquidity ${launch.poolLiquidity}` : `bonding curve ${launch.curve}`}`, !launch.graduated || launch.poolLiquidity > 0n);
+        check(`creator fee recipient ${launch.creatorRecipient}`, !config.devWallet || launch.creatorRecipient.toLowerCase() === config.devWallet.toLowerCase(),
+          config.devWallet && launch.creatorRecipient.toLowerCase() !== config.devWallet.toLowerCase() ? `is not FAUCET_DEV_WALLET ${config.devWallet}; rewards accrue to the recipient, so the engine could never claim them` : '');
+
+        const route = routeFor(launch, config.pons.hook);
+        if (typeof route === 'string') {
+          check(`route: ${route}`, false);
+        } else {
+          const probeFrom = config.devWallet ?? ('0x1111111111111111111111111111111111111111' as Address);
+          const amount = 10n ** 15n;
+          const quoted = await probeChain.quote(route, token, amount, probeFrom);
+          const simulated = await probeChain.simulateBuy(route, token, amount, probeFrom, config.burnAddress);
+          check(`route: ${describeRoute(route)}`, true);
+          check(`simulated buy of 0.001 ${eth.symbol} → ${formatAmount(simulated, config.token, 2)} ${config.token.symbol} to ${config.burnAddress} (quote ${formatAmount(quoted, config.token, 2)})`, simulated > 0n && simulated === quoted, simulated === quoted ? '' : 'quote and simulation disagree');
+        }
+      }
+    } catch (e) {
+      check('launch record / route', false, e instanceof Error ? e.message : String(e));
     }
   }
 
-  process.stdout.write('\n');
-  for (const [label, ok, hint] of checks) {
-    process.stdout.write(`  ${ok ? green('ok  ') : red('FAIL')} ${label}${hint ? `  ${dim(hint)}` : ''}\n`);
+  if (config.devWallet) {
+    try {
+      const bal = await probeChain.balance(config.devWallet);
+      check(`dev wallet balance ${formatAmount(bal, eth, 6)} ${eth.symbol}`, true);
+      const claimable = await probeChain.claimable(config.devWallet);
+      check(`claimable creator rewards in the Pons fee escrow: ${formatAmount(claimable, eth, 6)} ${eth.symbol}`, true);
+    } catch (e) {
+      check('dev wallet / escrow readable', false, e instanceof Error ? e.message : String(e));
+    }
   }
-  process.stdout.write('\n');
+
+  if (hasKey && config.devWallet) {
+    try {
+      const signed = liveChain(config, true);
+      check(`signer ${signed.signer} matches FAUCET_DEV_WALLET`, true);
+    } catch (e) {
+      check('signer matches FAUCET_DEV_WALLET', false, e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  out('\n');
+  for (const [label, ok, hint] of checks) out(`  ${ok ? green('ok  ') : red('FAIL')} ${label}${hint && (!ok || hint.startsWith('config says')) ? `  ${dim(hint)}` : ''}\n`);
+  out('\n');
   if (checks.some(([, ok]) => !ok)) process.exitCode = 1;
 }
 
@@ -253,13 +404,16 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   switch (argv[0]) {
     case 'policy': return cmdPolicy(CONFIG);
+    case 'claim': return cmdClaim(CONFIG, argv);
     case 'plan': return cmdPlan(CONFIG, argv);
     case 'burn': return cmdBurn(CONFIG, argv);
+    case 'run': return cmdRun(CONFIG, argv);
     case 'status': return cmdStatus(CONFIG);
     case 'verify': return cmdVerify(CONFIG, argv);
     case 'doctor': return cmdDoctor(CONFIG);
+    case 'reset': return cmdReset(argv);
     case undefined: case 'help': case '--help': case '-h':
-      process.stdout.write(`\n${usage()}\n`); return;
+      out(`\n${usage()}\n`); return;
     default:
       process.stderr.write(`\nunknown command: ${argv[0]}\n\n${usage()}\n`);
       process.exitCode = 1;
@@ -271,7 +425,3 @@ main().catch((error: unknown) => {
   process.exitCode = 1;
 });
 
-// Keep the import used for the mock verify path in tests.
-void tokensTransferredTo;
-void readFile;
-void resolve;

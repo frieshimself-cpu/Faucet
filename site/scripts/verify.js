@@ -20,13 +20,13 @@
     const b = (data.burns || []).find((x) => x.txHash.toLowerCase() === h.toLowerCase());
     if (!b) {
       facts.innerHTML = '';
-      show('no', `<b>Not in the ledger.</b> ${data.chain.explorerTx ? `Check it on the explorer: <a href="${data.chain.explorerTx}${h}" rel="noopener">${h.slice(0, 14)}…</a>. A burn shows a ${data.token.symbol} Transfer to ${data.burnAddress.slice(0, 8)}…dEaD.` : 'The explorer link is not configured yet; use <code>faucet verify</code> against the chain.'}`);
+      show('no', `<b>Not in the ledger.</b> ${data.chain.explorerTx ? `Check it on the Robinhood Chain explorer: <a href="${data.chain.explorerTx}${h}" rel="noopener">${h.slice(0, 14)}…</a>. A burn shows a ${data.token.symbol} Transfer to ${data.burnAddress.slice(0, 8)}…dEaD.` : 'Use <code>faucet verify</code> against the chain.'}`);
       return;
     }
     const eth = data.native.symbol, tok = data.token.symbol;
     facts.innerHTML = [
       ['Burn', `#${b.id}`], ['When', b.timestamp.replace('T', ' ').slice(0, 19) + ' UTC'], ['Block', b.block.toLocaleString()],
-      ['Spent', `${b.ethSpent} ${eth}`], ['Burned', `${b.tokensBurned} ${tok}`], ['Quote', `${b.expectedOut} ${tok}`],
+      ['Venue', b.venue === 'uniswap-v4' ? 'Uniswap v4' : 'Pons curve'], ['Spent', `${b.ethSpent} ${eth}`], ['Burned', `${b.tokensBurned} ${tok}`], ['Quote', `${b.expectedOut} ${tok}`],
       ['Min out', `${b.minOut} ${tok}`], ['Gas', `${b.gas} ${eth}`], ['Recipient', data.burnAddress],
     ].map(([k, v]) => `<div><dt>${k}</dt><dd class="mono">${v}</dd></div>`).join('');
     show(b.mode === 'mock' ? 'warn' : 'ok',
@@ -40,7 +40,7 @@
     init(d) {
       data = d;
       const picks = (d.burns || []).slice(-3).reverse();
-      samples.innerHTML = picks.length ? 'From the ledger: ' + picks.map((b) => `<button type="button" class="verify__sample mono" data-hash="${b.txHash}">burn #${b.id}</button>`).join(' ') : '';
+      samples.innerHTML = picks.length ? 'From the ledger: ' + picks.map((b) => `<button type="button" class="verify__sample mono" data-hash="${b.txHash}">burn #${b.id}</button>`).join(' ') : 'No burns in the ledger yet; paste any Robinhood Chain transaction hash to get its explorer link.';
       samples.addEventListener('click', (e) => { const b = e.target.closest('[data-hash]'); if (b) lookup(b.dataset.hash); });
       form.addEventListener('submit', (e) => { e.preventDefault(); lookup(input.value); });
     },

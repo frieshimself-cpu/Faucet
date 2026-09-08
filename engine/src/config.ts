@@ -4,11 +4,13 @@
  * The site reads a generated copy of this, so the numbers on the page and the
  * numbers the engine settles with can never drift apart.
  *
- * Chain constants are deliberately null until they are confirmed against the
- * Robinhood Chain and Pons documentation for the launch. `faucet doctor`
- * refuses to run live until every one of them is set.
+ * Chain and venue addresses default to Robinhood Chain mainnet and the Pons
+ * v2 contracts, all of which were verified by simulation against the live
+ * chain (see pons.ts). Only two things are launch-specific and must come from
+ * the environment: the token, and the dev wallet Pons credits rewards to.
  */
 
+import { PONS, ROBINHOOD_CHAIN, UNISWAP_V4 } from './pons.js';
 import type { Address, Asset, BucketId, Bps, RoutingPolicy } from './types.js';
 import { BPS_DENOMINATOR, BURN_ADDRESS } from './types.js';
 
@@ -21,42 +23,50 @@ export interface FaucetConfig {
     readonly chain: string;
   };
   readonly chain: {
-    /** Set from the chain's published docs at launch. */
-    readonly chainId: number | null;
-    /** From FAUCET_RPC_URL. */
-    readonly rpcUrl: string | null;
-    /** Prefix for a transaction link, e.g. "https://explorer.example/tx/". */
-    readonly explorerTx: string | null;
+    readonly chainId: number;
+    readonly rpcUrl: string;
+    /** Prefix for a transaction link. */
+    readonly explorerTx: string;
   };
   readonly token: Asset;
   readonly native: Asset;
-  /** The wallet Pons pays creator rewards into. Signs the buybacks. */
+  /** The wallet Pons credits creator rewards to. Claims them and signs the buybacks. */
   readonly devWallet: Address | null;
   readonly burnAddress: Address;
-  readonly dex: {
-    readonly kind: 'uniswap-v2';
-    /** UniswapV2Router02-compatible router on Robinhood Chain. */
-    readonly router: Address | null;
-    /** Wrapped native token the router paths through. */
-    readonly weth: Address | null;
+  /** Pons v2 launch contracts. */
+  readonly pons: {
+    readonly factory: Address;
+    readonly hook: Address;
+    readonly feeEscrow: Address;
+  };
+  /** Uniswap v4, where a graduated Pons token trades. */
+  readonly uniswapV4: {
+    readonly poolManager: Address;
+    readonly universalRouter: Address;
+    readonly quoter: Address;
+    readonly stateView: Address;
   };
   readonly limits: {
     /** Left in the wallet so the next cycle can always pay for gas. */
     readonly gasReserveWei: bigint;
     /** Below this, nothing is bought; a tiny swap is mostly gas. */
     readonly minBuybackWei: bigint;
+    /** Below this, rewards are left in the escrow for a later cycle. */
+    readonly minClaimWei: bigint;
     /** Maximum accepted drop from the quote before the swap reverts. */
     readonly slippageBps: Bps;
     /** How long a signed swap stays valid. */
     readonly deadlineSeconds: number;
+    /** How often the runner cycles. */
+    readonly intervalSeconds: number;
   };
   readonly routing: RoutingPolicy;
 }
 
 /**
- * One rule. Every basis point of creator rewards is spent buying the token
- * and the swap delivers straight to the burn address, so the tokens never
- * sit in a wallet anyone controls.
+ * One rule. Every basis point of creator rewards is spent buying the token,
+ * and the buy delivers straight to the burn address, so the tokens never sit
+ * in a wallet anyone controls.
  */
 export const ROUTING: RoutingPolicy = {
   rules: [
@@ -65,8 +75,9 @@ export const ROUTING: RoutingPolicy = {
       bps: 10_000,
       label: 'Buyback & burn',
       intent:
-        'Every creator reward the dev wallet receives is swapped for the token on the DEX, ' +
-        'with the swap output sent directly to the burn address.',
+        'Every creator reward claimed from the Pons fee escrow is spent buying the token, ' +
+        'on its bonding curve before graduation and on the Uniswap v4 pool after, ' +
+        'with the tokens delivered directly to the burn address.',
     },
   ],
 };
@@ -77,16 +88,16 @@ export const CONFIG: FaucetConfig = {
     ticker: 'ROBIN',
     tagline: 'Every creator reward buys the coin back and burns it.',
     launchpad: 'Pons',
-    chain: 'Robinhood Chain',
+    chain: ROBINHOOD_CHAIN.name,
   },
   chain: {
-    chainId: envInt('FAUCET_CHAIN_ID'),
-    rpcUrl: process.env['FAUCET_RPC_URL'] ?? null,
-    explorerTx: process.env['FAUCET_EXPLORER_TX'] ?? null,
+    chainId: envInt('FAUCET_CHAIN_ID') ?? ROBINHOOD_CHAIN.chainId,
+    rpcUrl: process.env['FAUCET_RPC_URL'] ?? ROBINHOOD_CHAIN.rpcUrl,
+    explorerTx: process.env['FAUCET_EXPLORER_TX'] ?? ROBINHOOD_CHAIN.explorerTx,
   },
   token: {
     address: envAddress('FAUCET_TOKEN'),
-    symbol: 'ROBIN',
+    symbol: process.env['FAUCET_TOKEN_SYMBOL'] ?? 'ROBIN',
     decimals: 18,
   },
   native: {
@@ -96,16 +107,26 @@ export const CONFIG: FaucetConfig = {
   },
   devWallet: envAddress('FAUCET_DEV_WALLET'),
   burnAddress: BURN_ADDRESS,
-  dex: {
-    kind: 'uniswap-v2',
-    router: envAddress('FAUCET_ROUTER'),
-    weth: envAddress('FAUCET_WETH'),
+  pons: {
+    factory: envAddress('FAUCET_PONS_FACTORY') ?? PONS.factory,
+    hook: envAddress('FAUCET_PONS_HOOK') ?? PONS.hook,
+    feeEscrow: envAddress('FAUCET_PONS_FEE_ESCROW') ?? PONS.feeEscrow,
+  },
+  uniswapV4: {
+    poolManager: UNISWAP_V4.poolManager,
+    universalRouter: envAddress('FAUCET_V4_UNIVERSAL_ROUTER') ?? UNISWAP_V4.universalRouter,
+    quoter: envAddress('FAUCET_V4_QUOTER') ?? UNISWAP_V4.quoter,
+    stateView: envAddress('FAUCET_V4_STATE_VIEW') ?? UNISWAP_V4.stateView,
   },
   limits: {
-    gasReserveWei: 2_000_000_000_000_000n, // 0.002 ETH
-    minBuybackWei: 5_000_000_000_000_000n, // 0.005 ETH
+    // Gas on Robinhood Chain is ~0.3 gwei: a claim costs ~42k gas and a buy
+    // ~105k (curve) or ~160k (v4), so 0.001 ETH covers many cycles.
+    gasReserveWei: envWei('FAUCET_GAS_RESERVE_WEI') ?? 1_000_000_000_000_000n, // 0.001 ETH
+    minBuybackWei: envWei('FAUCET_MIN_BUYBACK_WEI') ?? 2_000_000_000_000_000n, // 0.002 ETH
+    minClaimWei: envWei('FAUCET_MIN_CLAIM_WEI') ?? 500_000_000_000_000n, // 0.0005 ETH
     slippageBps: 300, // 3%
     deadlineSeconds: 180,
+    intervalSeconds: 180,
   },
   routing: ROUTING,
 };
@@ -141,12 +162,8 @@ export function assertPolicyBalanced(policy: RoutingPolicy): void {
 /** Which live-mode settings are still missing. Empty means ready. */
 export function missingForLive(config: FaucetConfig): string[] {
   const missing: string[] = [];
-  if (!config.chain.rpcUrl) missing.push('FAUCET_RPC_URL');
-  if (config.chain.chainId === null) missing.push('FAUCET_CHAIN_ID');
   if (!config.token.address) missing.push('FAUCET_TOKEN');
   if (!config.devWallet) missing.push('FAUCET_DEV_WALLET');
-  if (!config.dex.router) missing.push('FAUCET_ROUTER');
-  if (!config.dex.weth) missing.push('FAUCET_WETH');
   return missing;
 }
 
@@ -163,6 +180,13 @@ function envInt(name: string): number | null {
   const n = Number(value);
   if (!Number.isInteger(n) || n <= 0) throw new PolicyError(`${name} must be a positive integer, got ${value}`);
   return n;
+}
+
+function envWei(name: string): bigint | null {
+  const value = process.env[name];
+  if (!value) return null;
+  if (!/^\d+$/.test(value)) throw new PolicyError(`${name} must be a whole number of wei, got ${value}`);
+  return BigInt(value);
 }
 
 assertPolicyBalanced(ROUTING);

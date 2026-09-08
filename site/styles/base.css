@@ -226,3 +226,14 @@ code {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
   [data-reveal] { opacity: 1; transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   quieter pass — plain sans, sentence-case labels, no italics, no nameplate
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ink { font-family: inherit; font-style: normal; font-weight: 600; font-size: 1em; letter-spacing: inherit; color: var(--water-bright); padding: 0; }
+.section__kicker { font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0; text-transform: none; font-weight: 500; color: var(--water); gap: 0.45rem; }
+.pipe-tick { width: 6px; height: 6px; border-radius: 50%; }
+.section__title { font-weight: 600; letter-spacing: -0.025em; }
+.section__lede { color: var(--text-soft); }
+h1, h2, h3, h4 { letter-spacing: -0.02em; }

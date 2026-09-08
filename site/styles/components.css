@@ -447,7 +447,7 @@
 .ledger__headDots i:nth-child(2) { animation-delay: 0.4s; }
 .ledger__headDots i:nth-child(3) { animation-delay: 0.8s; }
 
-.ledger__scroll { overflow-x: auto; min-width: 0; }
+.ledger__scroll { overflow-x: auto; min-width: 0; position: relative; }
 .ledger__table { width: 100%; border-collapse: collapse; min-width: 940px; }
 
 .ledger__table th {
@@ -821,3 +821,28 @@ select.field__input { padding-right: 2rem; appearance: none; background-image: l
 
 .footer { border-top: 1px solid var(--line); }
 .footer__links a:hover { color: var(--water-bright); }
+
+/* quieter pass */
+.brand__text em { font-family: var(--font-display); font-style: normal; font-size: 0.72rem; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.nav__build { font-family: var(--font-display); font-size: 0.78rem; letter-spacing: 0; }
+.ca__label, .stat__label, .field__label, .ledger__headTitle, .ledger__table th, .verify__facts dt, .constants__grid dt, .detail h4, .status__table th, .pill, .tag-mock, .verify__lvl {
+  font-family: var(--font-display); letter-spacing: 0; text-transform: none; font-weight: 500;
+}
+.stat__label { font-size: 0.82rem; color: var(--muted); }
+.ledger__headTitle { font-size: 0.9rem; font-weight: 600; }
+.ledger__headMeta { font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0; }
+.ledger__table th { font-size: 0.78rem; }
+.constants__grid dt { font-size: 0.8rem; }
+.verify__facts dt { font-size: 0.78rem; }
+.status__table th { font-size: 0.82rem; letter-spacing: 0; text-transform: none; }
+.pill, .tag-mock { font-size: 0.72rem; letter-spacing: 0; text-transform: none; padding: 0.12rem 0.55rem; }
+.detail h4 { font-size: 0.8rem; color: var(--muted); }
+.field__label { font-size: 0.82rem; }
+.stat__value { font-weight: 600; }
+.stat__value em { font-size: 0.5em; font-weight: 500; }
+.stats__source { font-family: var(--font-display); font-size: 0.8rem; }
+.ledger__epoch { font-family: var(--font-display); font-weight: 500; }
+.eyebrow { font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0; }
+.eyebrow__tag { color: var(--text); font-weight: 600; }
+.eyebrow__sha { font-family: var(--font-mono); color: var(--muted); }
+.footer__build { font-family: var(--font-mono); }

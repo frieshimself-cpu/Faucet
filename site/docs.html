@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Docs — Robinhood buyback and burn</title>
-<meta name="description" content="How the buyback-and-burn engine plans a swap, delivers it to the burn address, and accounts for every wei. Configuration, CLI, going live, deployment." />
+<meta name="description" content="How the buyback-and-burn engine claims creator rewards from Pons, buys the token on its curve or its Uniswap v4 pool, delivers it to the burn address, and accounts for every wei." />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -40,117 +40,133 @@
       <span class="toc__title">Docs</span>
       <a href="#overview">Overview</a>
       <a href="#cycle">The cycle</a>
-      <a href="#swap">The swap</a>
+      <a href="#claim">The claim</a>
+      <a href="#buy">The buy</a>
       <a href="#conservation">Conservation</a>
+      <a href="#verified">Verified on-chain</a>
       <a href="#config">Configuration</a>
       <a href="#cli">CLI</a>
       <a href="#live">Going live</a>
       <a href="#runbook">Runbook</a>
       <a href="#site">The site</a>
       <a href="#deploy">Deploying</a>
-      <a href="#not-yet">Not built yet</a>
     </nav>
 
     <article class="prose">
       <h1 id="overview">Buyback and burn</h1>
-      <p class="lede">An engine for Robinhood on Pons, on Robinhood Chain. It takes the creator rewards Pons pays the dev wallet, spends every basis point of them buying the token on the DEX, and has the swap deliver the tokens straight to the burn address.</p>
-      <p>Two things live in the repository. <code>engine/</code> is the engine: TypeScript, one runtime dependency (ethers, for signing), and a test suite that runs it against an in-memory chain. <code>site/</code> is this website: a static directory with no build step, rendering the ledger the engine writes.</p>
-      <p>Two invariants are enforced in code rather than promised in copy. <code>assertPolicyBalanced()</code> throws unless the routing policy allocates exactly 10,000 basis points, and it runs on import. After every swap the engine checks the wallet moved by exactly the amount sent plus the gas paid, and refuses to record the cycle otherwise.</p>
+      <p class="lede">An engine for Robinhood on Pons, on Robinhood Chain. Every three minutes it claims the creator rewards Pons holds for the dev wallet in its fee escrow, spends every basis point of them buying the token, and has the buy deliver the tokens straight to the burn address.</p>
+      <p>Two things live in the repository. <code>engine/</code> is the engine: TypeScript, one runtime dependency (ethers, for signing), and a test suite that runs it against an in-memory chain and against a real EVM node. <code>site/</code> is this website: a static directory with no build step, rendering the ledger the engine writes.</p>
+      <p>Two invariants are enforced in code rather than promised in copy. <code>assertPolicyBalanced()</code> throws unless the routing policy allocates exactly 10,000 basis points, and it runs on import. After every buy the engine checks the wallet moved by exactly the amount sent plus the gas paid, and refuses to record the cycle otherwise.</p>
 
       <h2 id="cycle">The cycle</h2>
-      <pre><code>Pons creator rewards (ETH) ─→ dev wallet
-                                  │
-                                  ├─ keep the gas reserve
-                                  └─ spend the rest ─→ router.swapExactETHForTokens(
-                                                         amountOutMin = quote × (1 − 3%),
-                                                         path = [WETH, ROBIN],
-                                                         to   = 0x000…dEaD )
-                                                       ─→ receipt: Transfer(ROBIN → 0x…dEaD)
-                                                       ─→ balance check, to the wei
-                                                       ─→ ledger entry</code></pre>
-      <p><strong>plan</strong> reads the wallet, subtracts the gas reserve, runs the remainder through the routing policy (one bucket, but the same code path a multi-bucket policy would use), quotes the router, and derives the minimum output. Nothing is signed. <strong>execute</strong> takes a plan and sends exactly that. A dry run and a live run compute the same plan; the only difference is whether execute is called.</p>
+      <pre><code>Pons fee escrow ── claim() ──→ dev wallet
+  balanceOf(dev wallet)           ├─ keep the gas reserve
+  accrues on every trade          └─ spend the rest ──→ buy, recipient = 0x000…dEaD
+                                                          before graduation:  curve.buy(amountIn, minOut, 0x…dEaD)
+                                                          after graduation:   UniversalRouter.execute(V4_SWAP → take(0x…dEaD))
+                                                        ──→ receipt: Transfer(ROBIN → 0x…dEaD)
+                                                        ──→ balance check, to the wei
+                                                        ──→ ledger entry</code></pre>
+      <p><strong>claim</strong> reads the escrow's <code>balanceOf</code> for the dev wallet and, if it is above the minimum, sends <code>claim()</code> and checks the wallet received exactly that amount less gas. <strong>plan</strong> reads the wallet, subtracts the gas reserve, runs the remainder through the routing policy (one bucket, but the same code path a multi-bucket policy would use), reads the launch record to pick the venue, quotes it, and derives the minimum output. Nothing is signed. <strong>execute</strong> takes a plan and sends exactly that. A dry run and a live run compute the same plan; the only difference is whether execute is called.</p>
       <h3>Quiet cycles</h3>
-      <p>If the spendable amount is under the minimum buyback (0.005 ETH by default), nothing is bought. Spending most of a small reward on gas would be worse than waiting, so the balance stays and the next cycle sees it.</p>
+      <p>If nothing is claimable, or the spendable amount is under the minimum buyback (0.002 ETH by default), the cycle does nothing. Spending most of a small reward on gas would be worse than waiting, so the rewards stay where they are and the next cycle sees them.</p>
 
-      <h2 id="swap">The swap</h2>
-      <p>One call on a UniswapV2Router02-compatible router: <code>swapExactETHForTokensSupportingFeeOnTransferTokens(amountOutMin, [WETH, token], burnAddress, deadline)</code> with the ETH as the transaction value. The recipient is the burn address, so the tokens go from the pool to 0x…dEaD inside the same transaction and never sit in the dev wallet.</p>
+      <h2 id="claim">The claim</h2>
+      <p>Pons does not pay creator rewards to the wallet; it credits them to the creator's balance in its fee escrow contract, in ETH, on every trade. <code>balanceOf(creator)</code> reads that balance and <code>claim()</code> pays it to the caller. The escrow reverts on an empty claim, so the engine reads first and only sends when there is something above the minimum (0.0005 ETH) worth the gas.</p>
+      <p>The escrow credits the launch's <em>creator fee recipient</em>, which is recorded in the factory. <code>faucet doctor</code> checks that recipient is the configured dev wallet; if it were not, the engine could never claim.</p>
+
+      <h2 id="buy">The buy</h2>
+      <p>A Pons v2 launch trades on its bonding curve until it graduates, then on a Uniswap v4 pool guarded by the Pons hook. The engine reads the launch record each cycle and buys wherever the token trades now.</p>
       <ul>
-        <li><strong>Slippage.</strong> The engine quotes <code>getAmountsOut</code> first and sets <code>amountOutMin</code> to the quote less the configured bound (3%). Below that the router reverts, which costs gas and nothing else. A swap with no minimum is an invitation to be sandwiched.</li>
-        <li><strong>Deadline.</strong> A signed swap not mined within 180 seconds is void.</li>
-        <li><strong>Fee-on-transfer safe.</strong> The <em>SupportingFeeOnTransferTokens</em> variant is used so a token that taxes transfers still settles correctly.</li>
+        <li><strong>On the curve.</strong> <code>buy(amountIn, minOut, recipient)</code> with the ETH as the transaction value and the burn address as the recipient. The curve delivers the tokens to the recipient and returns the amount. There is no separate quote function; the engine simulates the buy with <code>eth_call</code>, which is the exact answer.</li>
+        <li><strong>On the pool.</strong> One <code>execute</code> on the Universal Router with a single <code>V4_SWAP</code> command: <code>SWAP_EXACT_IN_SINGLE</code> on the pool key <code>{ETH, token, fee 0, tick spacing, Pons hook}</code>, <code>SETTLE_ALL</code> for the ETH, and <code>TAKE</code> with the burn address as the recipient and amount <code>OPEN_DELTA</code>, so the router hands the whole output to 0x…dEaD. The V4 quoter gives the expected output.</li>
+        <li><strong>Slippage.</strong> <code>minOut</code> is the quote less the configured bound (3%). Below that the venue reverts. The node's gas estimate catches this before anything is signed, so a refused buy costs nothing.</li>
+        <li><strong>Deadline.</strong> A signed buy not mined within 180 seconds is void.</li>
         <li><strong>Reading the burn.</strong> The engine parses the receipt's <code>Transfer</code> logs for the token and sums the amounts whose recipient is the burn address. That, not the quote, is what the ledger records as burned.</li>
       </ul>
 
       <h2 id="conservation">Conservation</h2>
       <p>Before recording a cycle the engine checks, in wei:</p>
       <pre><code>balance_before − eth_spent − gas_cost == balance_after
-tokens_burned ≥ amountOutMin
-gas_cost ≤ gas_reserve</code></pre>
+tokens_burned ≥ minOut
+gas_cost ≤ gas_reserve
+claimed == escrow.balanceOf(wallet) before the claim</code></pre>
       <p>If any of those fails, the cycle is not recorded and the error names the numbers. The ledger loader re-checks the first line on every receipt it reads, so a hand-edited ledger is rejected too.</p>
 
+      <h2 id="verified">Verified on-chain</h2>
+      <p>Every address and call was checked against Robinhood Chain mainnet (chain id 4663) by simulation, with no key involved, before it was written into <code>engine/src/pons.ts</code>:</p>
+      <table>
+        <thead><tr><th>Contract</th><th>Address</th><th>What was confirmed</th></tr></thead>
+        <tbody>
+          <tr><td>Pons fee escrow</td><td><code>0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e</code></td><td><code>balanceOf</code> is the claimable ETH; <code>claim()</code> pays exactly that to the caller; an empty claim reverts.</td></tr>
+          <tr><td>Pons factory</td><td><code>0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e</code></td><td><code>getLaunchedToken</code> gives the curve, the creator fee recipient, the pair token and the v4 tick spacing.</td></tr>
+          <tr><td>Pons hook</td><td><code>0xE5e702641Ea86F4ae6cC3cDaeD2B886f976Be044</code></td><td>The pool key with this hook reproduces the pool id the PoolManager emitted.</td></tr>
+          <tr><td>Bonding curve</td><td>per launch</td><td><code>buy</code> delivers to the recipient, returns the amount, reverts under <code>minOut</code>.</td></tr>
+          <tr><td>Universal Router</td><td><code>0x8876789976decbfcbbbe364623c63652db8c0904</code></td><td>A V4_SWAP with TAKE to the burn address delivers exactly the V4 quoter's amount; reverts under <code>minOut</code>.</td></tr>
+        </tbody>
+      </table>
+      <p>The test suite also stands up a real EVM node and runs the live code path (real signing) against a bonding curve and fee escrow with the same external shape and the same revert selectors.</p>
+
       <h2 id="config">Configuration</h2>
-      <p>Limits live in <code>engine/src/config.ts</code>; chain and contract addresses come from the environment, so no address is ever a literal in the code. The site reads a generated copy, so the numbers on the page cannot drift from what the engine settles with.</p>
+      <p>Limits live in <code>engine/src/config.ts</code> and can be overridden in wei from the environment. Chain and venue addresses default to Robinhood Chain and the Pons v2 contracts. Only the token and the dev wallet are launch-specific.</p>
       <table>
         <thead><tr><th>Setting</th><th>Default</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td><code>FAUCET_RPC_URL</code></td><td>—</td><td>Robinhood Chain JSON-RPC endpoint.</td></tr>
-          <tr><td><code>FAUCET_CHAIN_ID</code></td><td>—</td><td>Pinned; the engine refuses an RPC that reports a different id.</td></tr>
-          <tr><td><code>FAUCET_TOKEN</code></td><td>—</td><td>The token contract.</td></tr>
-          <tr><td><code>FAUCET_ROUTER</code>, <code>FAUCET_WETH</code></td><td>—</td><td>Router the pool trades on, and its wrapped ETH.</td></tr>
-          <tr><td><code>FAUCET_DEV_WALLET</code></td><td>—</td><td>Where Pons pays creator rewards. Signs the buybacks.</td></tr>
-          <tr><td><code>FAUCET_DEV_WALLET_KEY</code></td><td>—</td><td>Private key. Needed only for <code>burn --execute</code>. Never committed.</td></tr>
-          <tr><td><code>limits.gasReserveWei</code></td><td>0.002 ETH</td><td>Left in the wallet every cycle.</td></tr>
-          <tr><td><code>limits.minBuybackWei</code></td><td>0.005 ETH</td><td>Below this, nothing is bought.</td></tr>
-          <tr><td><code>limits.slippageBps</code></td><td>300</td><td>Maximum drop from the quote before the swap reverts.</td></tr>
-          <tr><td><code>limits.deadlineSeconds</code></td><td>180</td><td>Validity of a signed swap.</td></tr>
+          <tr><td><code>FAUCET_TOKEN</code></td><td>—</td><td>The token contract, as launched on Pons v2.</td></tr>
+          <tr><td><code>FAUCET_DEV_WALLET</code></td><td>—</td><td>The wallet that launched it; the escrow credits its rewards here. Claims and signs the buys.</td></tr>
+          <tr><td><code>FAUCET_DEV_WALLET_KEY</code></td><td>—</td><td>Private key. Needed only to claim and buy. Never committed.</td></tr>
+          <tr><td><code>FAUCET_RPC_URL</code>, <code>FAUCET_CHAIN_ID</code></td><td>Robinhood Chain, 4663</td><td>Pinned; the engine refuses an RPC that reports a different id.</td></tr>
+          <tr><td><code>FAUCET_MIN_CLAIM_WEI</code></td><td>0.0005 ETH</td><td>Below this, rewards stay in the escrow.</td></tr>
+          <tr><td><code>FAUCET_GAS_RESERVE_WEI</code></td><td>0.001 ETH</td><td>Left in the wallet every cycle.</td></tr>
+          <tr><td><code>FAUCET_MIN_BUYBACK_WEI</code></td><td>0.002 ETH</td><td>Below this, nothing is bought.</td></tr>
+          <tr><td><code>limits.slippageBps</code></td><td>300</td><td>Maximum drop from the quote before the buy reverts.</td></tr>
+          <tr><td><code>limits.deadlineSeconds</code></td><td>180</td><td>Validity of a signed buy.</td></tr>
+          <tr><td><code>limits.intervalSeconds</code></td><td>180</td><td>How often the runner cycles.</td></tr>
         </tbody>
       </table>
 
       <h2 id="cli">CLI</h2>
       <pre><code>faucet policy                       show the routing policy and prove it sums to 100%
+faucet claim [--execute] [--mock]   claim creator rewards from the Pons fee escrow
 faucet plan [--mock]                read the wallet and quote the buyback (no spend)
-faucet burn [--execute] [--mock]    run a cycle; --execute sends the swap
+faucet burn [--execute] [--mock]    one cycle: claim, buy, burn; --execute sends
             [--rounds N] [--write-site]
+faucet run [--every S] [--mock]     cycle forever (default every 180s)
+           [--commit-every M]       commit + push the ledger at most every M minutes
 faucet status                       totals from the burn ledger
 faucet verify &lt;txhash&gt;              confirm a tx burned the token
-faucet doctor                       check config, RPC and signer</code></pre>
-      <p><code>--mock</code> runs against an in-memory chain with deterministic rewards; it is what the test suite and the pre-launch site data use. <code>--execute</code> is the only flag that spends anything, and only with a signer that matches the configured dev wallet.</p>
+faucet doctor                       check config, RPC, launch record; simulate a buy
+faucet reset --yes                  empty the ledger and the site data</code></pre>
+      <p><code>--mock</code> runs against an in-memory chain and writes under <code>.faucet-mock/</code>, never into the shipped data. <code>--execute</code> is the only flag that spends anything, and only with a signer that matches the configured dev wallet.</p>
 
       <h2 id="live">Going live</h2>
       <ol>
-        <li>Fill <code>.env</code> from <code>.env.example</code> with the Robinhood Chain RPC, chain id and explorer prefix, the router and WETH, the token, and the dev wallet.</li>
-        <li><code>npm run doctor</code>. Every check must pass: it verifies the RPC reports the pinned chain id, reads the wallet balance and the token supply, and gets a quote from the router.</li>
+        <li>Export <code>FAUCET_TOKEN</code> and <code>FAUCET_DEV_WALLET</code>.</li>
+        <li><code>npm run doctor</code>. Every line must be ok: chain id, gas price against the reserve, the token, the launch record and its creator fee recipient, the claimable balance, and a simulated buy to the burn address that matches the quote.</li>
         <li><code>npm run plan</code> to see what one cycle would do, with nothing sent.</li>
-        <li>Export <code>FAUCET_DEV_WALLET_KEY</code> in the shell that runs the cycle, never in a file, then <code>node dist/src/cli.js burn --execute --write-site</code>.</li>
-        <li>Commit and push the updated ledger; the site redeploys with the new burn.</li>
+        <li>Export <code>FAUCET_DEV_WALLET_KEY</code> in the shell that runs the engine, never in a file, then <code>npm run run:live</code>.</li>
+        <li>The runner commits and pushes the ledger; the site redeploys with each burn.</li>
       </ol>
-      <div class="callout"><p>The engine will not send if the signer derived from the key is not the configured dev wallet, if the swap recipient is not the burn address, or if the plan does not account for the whole balance. Those checks run before the transaction is built.</p></div>
+      <div class="callout"><p>The engine will not send if the signer derived from the key is not the configured dev wallet, if the buy recipient is not the burn address, or if the plan does not account for the whole balance. Those checks run before the transaction is built.</p></div>
 
       <h2 id="runbook">Runbook</h2>
       <h3>Reading a receipt</h3>
-      <p><strong>spent</strong> is the ETH sent as the swap value. <strong>burned</strong> is the token amount that reached the burn address, read from the receipt, with the quote and realised slippage beside it. <strong>wallet</strong> shows before and after, and <strong>conserved</strong> is the wei check.</p>
-      <h3>When a swap reverts</h3>
-      <pre><code>error swap 0x… reverted (slippage over 300 bps, or the deadline passed). Only gas was spent.</code></pre>
-      <p>The ETH is still in the wallet. Do not loosen the bound to force it through; run <code>plan</code> again and see whether the pool has settled. If reverts repeat at 3% the pool is too thin for the size, and the right fix is smaller, more frequent cycles.</p>
+      <p><strong>received</strong> is what the claim pulled from the escrow. <strong>spent</strong> is the ETH sent as the buy's value. <strong>burned</strong> is the token amount that reached the burn address, read from the receipt, with the quote and realised slippage beside it. <strong>wallet</strong> shows before and after, and <strong>conserved</strong> is the wei check.</p>
+      <h3>When a buy is refused</h3>
+      <pre><code>FAIL   buy rejected before sending: execution reverted (bonding curve: output below minOut). Nothing was signed and no gas was spent</code></pre>
+      <p>The market moved more than 3% between quote and fill. The ETH is still in the wallet; the next tick quotes again. Do not loosen the bound to force it through.</p>
       <h3>When conservation fails</h3>
       <p>The cycle is not recorded. Nothing further will be sent until the numbers are explained. A mismatch usually means something else moved ETH in the wallet between the plan and the receipt; the receipt's own numbers will show which.</p>
       <h3>Scheduling</h3>
-      <p>Cycles are idempotent with respect to the wallet: a run that finds nothing above the floor does nothing. Any scheduler that can run <code>burn --execute</code> with the key in its environment will do; hourly is a sensible starting cadence once rewards flow.</p>
+      <p><code>faucet run</code> is the scheduler: claim, plan, execute, record, sleep, with a lock file, backoff on failure and an optional commit-and-push. Keep it up with <code>deploy/faucet.service</code> or the Dockerfile, with the key only in that process's environment.</p>
 
       <h2 id="site">The site</h2>
-      <p>Static files. It reads <code>data/faucet.json</code>, the ledger summary written by <code>burn --write-site</code>; <code>data/burns.json</code>, the full receipts; and <code>data/build.json</code>, the commit and build time stamped by <code>npm run build:info</code>. The footer of every page shows that stamp. Opened straight off disk it falls back to the snapshot in <code>scripts/data.js</code>, which <code>npm run sync:fallback</code> regenerates, and says so.</p>
+      <p>Static files. It reads <code>data/faucet.json</code>, the ledger summary the engine writes after every cycle; <code>data/burns.json</code>, the full receipts; and <code>data/build.json</code>, the commit and build time stamped by <code>npm run build:info</code>. The footer of every page shows that stamp. Opened straight off disk it falls back to the snapshot in <code>scripts/data.js</code>, which <code>npm run sync:fallback</code> regenerates, and says so. The ledger ships empty and fills only with real transactions.</p>
 
       <h2 id="deploy">Deploying</h2>
       <p>The repository is Vercel-ready. <code>vercel.json</code> serves <code>site/</code> and uses the build step as a guard: it typechecks the engine and runs <code>faucet policy</code>, which throws unless the policy sums to 100%. Headers include a Content-Security-Policy with no inline scripts, and <code>data/</code> is served uncached so a fresh burn is visible on the next load.</p>
       <pre><code>npm i -g vercel
 vercel --prod</code></pre>
-
-      <h2 id="not-yet">Not built yet</h2>
-      <ul>
-        <li><strong>Chain constants.</strong> Robinhood Chain's RPC, chain id, router and WETH are read from the environment and left unset in the repository until confirmed against the launch documentation. Nothing is guessed.</li>
-        <li><strong>A scheduler.</strong> The engine runs one cycle per invocation. Wiring it to cron or a small runner is deliberately separate from the engine.</li>
-        <li><strong>Claiming rewards from Pons.</strong> If Pons requires an explicit claim rather than paying the wallet directly, a source step to call it belongs before <code>plan</code>. The engine treats whatever is in the wallet as spendable.</li>
-      </ul>
     </article>
   </div>
 </main>

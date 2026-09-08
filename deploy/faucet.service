@@ -1,0 +1,25 @@
+# systemd unit for the runner. Install:
+#   sudo cp deploy/faucet.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now faucet
+#
+# Put the key in /etc/faucet.env (mode 0600, owned by root), not in the unit.
+[Unit]
+Description=Robinhood buyback-and-burn runner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=faucet
+WorkingDirectory=/opt/faucet
+EnvironmentFile=/etc/faucet.env
+ExecStart=/usr/bin/node dist/src/cli.js run --every 180 --commit-every 30
+Restart=always
+RestartSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/faucet
+
+[Install]
+WantedBy=multi-user.target

@@ -17,6 +17,11 @@
   }
 
   const num = (s) => Number(String(s).replace(/,/g, ''));
+  const short = (a) => (a && a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a);
+  const minutesWord = (secs) => {
+    const m = Math.round(secs / 60);
+    return ({ 1: 'one', 2: 'two', 3: 'three', 5: 'five', 10: 'ten', 15: 'fifteen', 30: 'thirty' })[m] || String(m);
+  };
 
   function buildBindings(d, build) {
     const rule = (d.policy || [])[0] || { bps: 10000, label: '', intent: '' };
@@ -34,7 +39,11 @@
       'devWallet': d.devWallet || 'to be provided',
       'burnAddress': d.burnAddress,
       'chain.chainId': d.chain.chainId === null ? 'unset' : String(d.chain.chainId),
-      'modeLabel': d.mode === 'live' ? 'on-chain' : d.mode === 'mock' ? 'mock chain, pre-launch' : 'none yet',
+      'venues.feeEscrow': (d.venues || {}).feeEscrow || '',
+      'venues.feeEscrowShort': short((d.venues || {}).feeEscrow || ''),
+      'modeLabel': d.mode === 'live' ? 'on-chain' : d.mode === 'mock' ? 'mock chain' : 'no cycles yet',
+      'totals.claimedNum': d.totals.claimed || '0',
+      'totals.claims': String(d.totals.claims || 0),
       'totals.ethSpentNum': d.totals.ethSpent,
       'totals.tokensBurnedNum': d.totals.tokensBurned,
       'totals.supplyBurnedPct': d.totals.supplyBurnedPct || '—',
@@ -44,13 +53,16 @@
       'policy.buyback.intent': rule.intent,
       'limits.gasReserve': d.limits.gasReserve,
       'limits.minBuyback': d.limits.minBuyback,
+      'limits.minClaim': d.limits.minClaim || '—',
+      'limits.interval': String(d.limits.intervalSeconds || 180),
+      'limits.intervalMinutes': minutesWord(d.limits.intervalSeconds || 180),
       'limits.slippagePct': `${(d.limits.slippageBps / 100).toFixed(2)}%`,
       'limits.deadline': String(d.limits.deadlineSeconds),
       'build.version': build.version || '0.0.0',
       'build.short': build.short || 'local',
       'build.branch': build.branch || 'local',
       'build.tests': String(build.tests || 0),
-      'build.stage': d.mode === 'live' ? 'live' : 'pre-launch',
+      'build.stage': d.mode === 'live' ? 'live' : 'awaiting first cycle',
       'build.date': date && !Number.isNaN(date.valueOf()) ? date.toISOString().slice(0, 10) : 'today',
     };
   }
@@ -104,6 +116,7 @@
     if (burns.length === 0) return;
     let acc = 0;
     const series = {
+      claimed: (d.claims || []).map((c) => Number(c.amountRaw)),
       eth: burns.map((b) => Number(b.ethSpentRaw)),
       tokens: burns.map((b) => Number(b.tokensBurnedRaw)),
       cumulative: burns.map((b) => (acc += Number(b.tokensBurnedRaw))),
@@ -111,7 +124,7 @@
     };
     document.querySelectorAll('[data-spark]').forEach((node) => {
       const v = series[node.dataset.spark];
-      if (!v) return;
+      if (!v || v.length === 0) return;
       const max = Math.max(...v), min = Math.min(...v), span = max - min || 1;
       node.innerHTML = v.map((x, i) => `<i style="--h:${v.length === 1 ? 100 : 30 + Math.round(((x - min) / span) * 70)}%;--d:${i * 60}ms" title="burn #${burns[i].id}"></i>`).join('');
     });
@@ -123,7 +136,13 @@
     const meta = document.getElementById('ledgerMeta');
     if (!body) return;
     const burns = (d.burns || []).slice().reverse();
-    if (burns.length === 0) { body.innerHTML = '<tr class="ledger__empty"><td colspan="8">No burns yet.</td></tr>'; return; }
+    if (burns.length === 0) {
+      body.innerHTML = '<tr class="ledger__empty"><td colspan="8">No burns yet. The ledger starts empty and fills only with real transactions; the first live cycle will appear here.</td></tr>';
+      if (meta) meta.textContent = `0 burns · ${source === 'live' ? 'data/faucet.json' : 'bundled snapshot'}`;
+      if (foot) foot.textContent = `Amounts in ${d.native.symbol} and ${d.token.symbol}. Every transaction hash will link to the Robinhood Chain explorer.`;
+      return;
+    }
+    const venueName = (v) => (v === 'uniswap-v4' ? 'Uniswap v4' : 'Pons curve');
 
     const eth = d.native.symbol, tok = d.token.symbol;
     const when = (iso) => iso.replace('T', ' ').slice(0, 16) + ' UTC';
@@ -135,16 +154,17 @@
       <tr class="ledger__row" data-burn="${b.id}" style="animation-delay:${i * 50}ms">
         <td class="ledger__epoch">#${b.id}</td>
         <td>${when(b.timestamp)}</td>
+        <td>${venueName(b.venue)}</td>
         <td>${b.ethSpent} ${eth}</td>
         <td>${b.tokensBurned} ${tok}</td>
         <td>${b.slippageRealisedBps >= 0 ? '−' : '+'}${(Math.abs(b.slippageRealisedBps) / 100).toFixed(2)}%</td>
-        <td>${b.gas}</td>
         <td>${txCell(b)}</td>
         <td><button class="ledger__toggle" type="button" aria-expanded="false" aria-controls="burn-${b.id}" aria-label="Details for burn ${b.id}">+</button></td>
       </tr>
       <tr class="ledger__detail" id="burn-${b.id}" hidden><td colspan="8">
         <div class="detail">
-          <div class="detail__col"><h4>Swap</h4><dl class="detail__facts">
+          <div class="detail__col"><h4>Buy</h4><dl class="detail__facts">
+            <div><dt>Venue</dt><dd class="mono">${venueName(b.venue)}</dd></div>
             <div><dt>Quote</dt><dd class="mono">${b.expectedOut} ${tok}</dd></div>
             <div><dt>Min out</dt><dd class="mono">${b.minOut} ${tok}</dd></div>
             <div><dt>Filled</dt><dd class="mono">${b.tokensBurned} ${tok}</dd></div>
@@ -157,6 +177,7 @@
           <div class="detail__col"><h4>Recipient</h4><dl class="detail__facts">
             <div><dt>To</dt><dd class="mono hash">${d.burnAddress}</dd></div>
             <div><dt>Gas</dt><dd class="mono">${b.gas} ${eth}</dd></div>
+            <div><dt>Claim</dt><dd class="mono hash">${b.claimTx ? (b.claimUrl ? `<a href="${b.claimUrl}" rel="noopener">${b.claimTx}</a>` : b.claimTx) : 'earlier cycle'}</dd></div>
           </dl></div>
           <div class="detail__actions">
             ${b.explorerUrl ? `<a class="btn btn--ghost btn--sm" href="${b.explorerUrl}" rel="noopener">Open on explorer</a>` : ''}
@@ -180,8 +201,8 @@
     if (meta) meta.textContent = `${burns.length} burns · ${source === 'live' ? 'data/faucet.json' : 'bundled snapshot'}`;
     if (foot) {
       foot.innerHTML = `Amounts in ${eth} and ${tok}. ` + (d.mode === 'mock'
-        ? '<span class="tag-mock">mock</span> Pre-launch: these burns were produced against the engine\'s in-memory chain with deterministic rewards (seed 42), reproducible with <code>npm run cycle</code>. Transaction hashes are placeholders until the first live cycle.'
-        : 'Every transaction hash links to the chain explorer.');
+        ? '<span class="tag-mock">mock</span> These burns were produced against the engine\'s in-memory chain. Transaction hashes are placeholders.'
+        : 'Every transaction hash links to the Robinhood Chain explorer.');
     }
   }
 
@@ -197,14 +218,17 @@
     const tank = document.getElementById('tankValue');
     if (tank) tank.textContent = `${d.totals.tokensBurned} ${d.token.symbol}`;
     const src = document.getElementById('statsSource');
-    if (src) src.innerHTML = source === 'live' ? 'Source: <code>data/faucet.json</code>, written by <code>faucet burn --write-site</code>.' : 'Source: bundled snapshot. Serve over HTTP for the live file.';
+    if (src) src.innerHTML = source === 'live' ? 'Source: <code>data/faucet.json</code>, written by the engine after every cycle.' : 'Source: bundled snapshot. Serve over HTTP for the live file.';
 
     const pill = (id, ok, okText, noText) => { const n = document.getElementById(id); if (!n) return; n.textContent = ok ? okText : noText; n.className = `pill ${ok ? 'pill--ok' : ''}`; };
     pill('pillChain', d.chain.chainId !== null, 'set', 'unset');
     pill('pillToken', !!d.token.address, 'set', 'unset');
     pill('pillWallet', !!d.devWallet, 'set', 'unset');
     const mode = document.getElementById('pillMode');
-    if (mode) { mode.textContent = d.mode === 'live' ? 'on-chain' : 'synthetic'; mode.className = `pill ${d.mode === 'live' ? 'pill--ok' : 'pill--warn'}`; }
+    if (mode) {
+      mode.textContent = d.mode === 'live' ? 'on-chain' : d.mode === 'mock' ? 'synthetic' : 'empty';
+      mode.className = `pill ${d.mode === 'live' ? 'pill--ok' : d.mode === 'mock' ? 'pill--warn' : ''}`;
+    }
   }
 
   async function start() {

@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Robinhood — buyback and burn on Pons</title>
-<meta name="description" content="Robinhood ($ROBIN) on Pons, Robinhood Chain. Every creator reward the dev wallet receives is swapped for the token with the output delivered straight to the burn address. Every burn is a public transaction." />
+<meta name="description" content="Robinhood ($ROBIN) on Pons, Robinhood Chain. Every three minutes the engine claims the creator rewards Pons holds for the dev wallet, buys the token with all of them, and has the buy deliver the tokens straight to the burn address. Every claim and every burn is a public transaction." />
 <meta name="theme-color" content="#0c0e0e" />
 <meta property="og:title" content="Robinhood — buyback and burn on Pons" />
 <meta property="og:description" content="100% of creator rewards buy the coin back and burn it. Verifiable on-chain, every cycle." />
@@ -63,18 +63,19 @@
       <h1 class="hero__title" data-split>
         <span class="line">Every creator reward</span>
         <span class="line">buys the coin back</span>
-        <span class="line">and <em class="ink">burns it.</em></span>
+        <span class="line">and burns it.</span>
       </h1>
 
       <p class="hero__lede">
         Robinhood is a token launched on <strong data-bind="project.launchpad">Pons</strong>, on
-        <strong data-bind="project.chain">Robinhood Chain</strong>. The creator rewards Pons pays the
-        dev wallet are not kept. Each cycle the engine spends everything above a small gas reserve
-        buying the token on the DEX, and the swap delivers the tokens straight to the burn address.
-        They never sit in a wallet anyone controls.
+        <strong data-bind="project.chain">Robinhood Chain</strong>. Pons holds the creator rewards
+        from every trade in its fee escrow. Every <span data-bind="limits.intervalMinutes">three</span> minutes
+        the engine claims them, keeps a small gas reserve, and spends everything else buying the
+        token, with the buy delivering the tokens straight to the burn address. They never sit in
+        a wallet anyone controls.
       </p>
       <p class="hero__lede hero__lede--small">
-        Every burn is a single public transaction. This page renders the ledger the engine wrote.
+        Every claim and every burn is a public transaction. This page renders the ledger the engine wrote.
       </p>
 
       <div class="hero__actions">
@@ -100,7 +101,7 @@
         <div class="scene__glow" aria-hidden="true"></div>
         <div class="scene__plaque" aria-hidden="true">
           <span class="scene__plaqueName" data-bind="project.nameUpper">ROBINHOOD</span>
-          <span class="scene__plaqueNo">BUYBACK &amp; BURN &middot; N&deg; 001</span>
+          <span class="scene__plaqueNo"></span>
         </div>
         <div class="scene__stage">
           <canvas class="fixture__canvas" id="waterCanvas" aria-hidden="true"></canvas>
@@ -300,31 +301,31 @@
   <div class="shell">
     <ul class="stats" id="stats">
       <li class="stat">
-        <span class="stat__label">Rewards spent</span>
+        <span class="stat__label">Claimed from Pons</span>
+        <span class="stat__value"><span data-count data-bind="totals.claimedNum">0</span> <em data-bind="native.symbol">ETH</em></span>
+        <span class="stat__note">creator rewards pulled from the fee escrow</span>
+        <span class="stat__spark" data-spark="claimed" aria-hidden="true"></span>
+      </li>
+      <li class="stat">
+        <span class="stat__label">Spent on buybacks</span>
         <span class="stat__value"><span data-count data-bind="totals.ethSpentNum">0</span> <em data-bind="native.symbol">ETH</em></span>
-        <span class="stat__note">100% of creator rewards, less gas reserve</span>
+        <span class="stat__note">100% of what was claimed, less the gas reserve</span>
         <span class="stat__spark" data-spark="eth" aria-hidden="true"></span>
       </li>
       <li class="stat">
         <span class="stat__label">Tokens burned</span>
         <span class="stat__value"><span data-count data-bind="totals.tokensBurnedNum">0</span> <em data-bind="token.symbol">ROBIN</em></span>
-        <span class="stat__note">delivered by the swap to 0x…dEaD</span>
+        <span class="stat__note">delivered by the buy to 0x…dEaD</span>
         <span class="stat__spark stat__spark--burn" data-spark="tokens" aria-hidden="true"></span>
       </li>
       <li class="stat">
         <span class="stat__label">Supply burned</span>
         <span class="stat__value"><span data-bind="totals.supplyBurnedPct">—</span></span>
-        <span class="stat__note">of total supply at the last cycle</span>
+        <span class="stat__note"><span data-bind="totals.burns">0</span> burn cycles, one transaction each</span>
         <span class="stat__spark stat__spark--build" data-spark="cumulative" aria-hidden="true"></span>
       </li>
-      <li class="stat">
-        <span class="stat__label">Burn cycles</span>
-        <span class="stat__value"><span data-count data-bind="totals.burns">0</span></span>
-        <span class="stat__note">one transaction each, all public</span>
-        <span class="stat__spark" data-spark="gas" aria-hidden="true"></span>
-      </li>
     </ul>
-    <p class="stats__source" id="statsSource">Source: <code>data/faucet.json</code>, written by <code>faucet burn --write-site</code>.</p>
+    <p class="stats__source" id="statsSource">Source: <code>data/faucet.json</code>, written by the engine after every cycle.</p>
   </div>
 </section>
 
@@ -334,11 +335,12 @@
       <p class="section__kicker"><span class="pipe-tick"></span>Mechanism</p>
       <h2 class="section__title">One inlet, one outlet, <em class="ink">no wallet in between.</em></h2>
       <p class="section__lede">
-        Pons pays creator rewards to the dev wallet in ETH. Each cycle the engine reads the balance,
-        keeps a fixed gas reserve, and sends the rest into a single router call:
-        <code>swapExactETHForTokens</code> with the recipient set to the burn address. The tokens go
-        from the pool to 0x…dEaD in the same transaction. The engine then checks the wallet moved by
-        exactly the amount sent plus gas, and refuses to record the cycle if it did not.
+        Pons credits creator rewards, in ETH, to the dev wallet's balance in its fee escrow. Each cycle
+        the engine calls <code>claim()</code> on the escrow, reads the wallet, keeps a fixed gas reserve,
+        and sends the rest into a single buy with the recipient set to the burn address: on the
+        Pons bonding curve before the token graduates, on its Uniswap v4 pool after. The tokens go
+        from the market to 0x…dEaD in the same transaction. The engine then checks the wallet moved
+        by exactly the amount sent plus gas, and refuses to record the cycle if it did not.
       </p>
     </header>
 
@@ -346,8 +348,8 @@
       <div class="loop__canvas">
         <div class="loop__frame">
           <div class="loop__stage">
-            <svg class="flow" id="flowDiagram" viewBox="-60 0 1450 360" role="img"
-                 aria-label="Creator rewards flow from Pons into the dev wallet, through a DEX swap, and into the burn address.">
+            <svg class="flow" id="flowDiagram" viewBox="-30 0 1620 360" role="img"
+                 aria-label="Creator rewards are claimed from the Pons fee escrow into the dev wallet, spent on a buy, and delivered to the burn address.">
               <defs>
                 <linearGradient id="pipeSkin" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0" stop-color="#e2b17c"/><stop offset="0.3" stop-color="#b87333"/>
@@ -359,55 +361,63 @@
               </defs>
 
               <g class="flow__casing" fill="none" stroke="url(#pipeSkin)" stroke-width="26" stroke-linecap="round">
-                <path d="M-60 180 H250"/>
-                <path d="M470 180 H700"/>
-                <path d="M920 180 H1150"/>
+                <path d="M220 180 H450"/>
+                <path d="M670 180 H900"/>
+                <path d="M1120 180 H1350"/>
               </g>
               <g class="flow__bore" fill="none" stroke="#0a0d0d" stroke-width="15" stroke-linecap="round">
-                <path d="M-60 180 H250"/><path d="M470 180 H700"/><path d="M920 180 H1150"/>
+                <path d="M220 180 H450"/><path d="M670 180 H900"/><path d="M1120 180 H1350"/>
               </g>
               <g class="flow__water" fill="none" stroke-width="9" stroke-linecap="round">
-                <path class="flow__stream" data-bucket="inlet" d="M-60 180 H250"/>
-                <path class="flow__stream" data-bucket="inlet" d="M470 180 H700"/>
-                <path class="flow__stream flow__stream--burn" data-bucket="buyback" d="M920 180 H1150"/>
+                <path class="flow__stream" data-bucket="inlet" d="M220 180 H450"/>
+                <path class="flow__stream" data-bucket="inlet" d="M670 180 H900"/>
+                <path class="flow__stream flow__stream--burn" data-bucket="buyback" d="M1120 180 H1350"/>
               </g>
 
               <g class="flow__couplings" fill="url(#pipeSkin)">
-                <rect x="96" y="164" width="24" height="34" rx="6"/>
-                <rect x="572" y="164" width="24" height="34" rx="6"/>
-                <rect x="1022" y="164" width="24" height="34" rx="6"/>
+                <rect x="322" y="164" width="24" height="34" rx="6"/>
+                <rect x="772" y="164" width="24" height="34" rx="6"/>
+                <rect x="1222" y="164" width="24" height="34" rx="6"/>
               </g>
 
               <g class="flow__label">
-                <text x="-30" y="132" class="flow__title">Creator rewards</text>
-                <text x="-30" y="152" class="flow__sub">paid by Pons on every trade, in ETH</text>
+                <text x="0" y="60" class="flow__title">Creator rewards</text>
+                <text x="0" y="80" class="flow__sub">accrue in ETH on every trade</text>
               </g>
 
-              <g class="flow__node" transform="translate(250 100)">
+              <g class="flow__node" transform="translate(0 100)">
+                <rect width="220" height="160" rx="14" fill="url(#nodeSkin)" stroke="rgba(255,255,255,.12)"/>
+                <text x="110" y="52" class="flow__nodeTitle" text-anchor="middle">PONS ESCROW</text>
+                <text x="110" y="78" class="flow__sub" text-anchor="middle">balanceOf(dev wallet)</text>
+                <text x="110" y="118" class="flow__pct" text-anchor="middle">claim()</text>
+                <text x="110" y="140" class="flow__sub" text-anchor="middle">every 3 minutes</text>
+              </g>
+
+              <g class="flow__node" transform="translate(450 100)">
                 <rect width="220" height="160" rx="14" fill="url(#nodeSkin)" stroke="rgba(255,255,255,.12)"/>
                 <text x="110" y="52" class="flow__nodeTitle" text-anchor="middle">DEV WALLET</text>
                 <text x="110" y="78" class="flow__sub" text-anchor="middle">balance − gas reserve</text>
                 <text x="110" y="118" class="flow__pct" text-anchor="middle" id="flowSpendPct">100%</text>
-                <text x="110" y="140" class="flow__sub" text-anchor="middle">to the swap</text>
+                <text x="110" y="140" class="flow__sub" text-anchor="middle">to the buy</text>
               </g>
 
-              <g class="flow__node" transform="translate(700 100)">
+              <g class="flow__node" transform="translate(900 100)">
                 <rect width="220" height="160" rx="14" fill="url(#nodeSkin)" stroke="rgba(255,255,255,.12)"/>
-                <text x="110" y="52" class="flow__nodeTitle" text-anchor="middle">DEX SWAP</text>
-                <text x="110" y="78" class="flow__sub" text-anchor="middle">ETH → ROBIN, one router call</text>
+                <text x="110" y="52" class="flow__nodeTitle" text-anchor="middle">BUY</text>
+                <text x="110" y="78" class="flow__sub" text-anchor="middle">Pons curve, or Uniswap v4 after graduation</text>
                 <text x="110" y="118" class="flow__pct" text-anchor="middle" id="flowSlippage">≤ 3.00%</text>
                 <text x="110" y="140" class="flow__sub" text-anchor="middle">slippage bound, or it reverts</text>
               </g>
 
-              <g class="flow__node flow__node--burn" transform="translate(1150 100)">
+              <g class="flow__node flow__node--burn" transform="translate(1350 100)">
                 <rect width="210" height="160" rx="14" fill="url(#nodeSkin)" stroke="rgba(240,133,95,.45)"/>
                 <text x="105" y="52" class="flow__nodeTitle" text-anchor="middle">BURN</text>
-                <text x="105" y="78" class="flow__sub" text-anchor="middle">swap recipient</text>
+                <text x="105" y="78" class="flow__sub" text-anchor="middle">buy recipient</text>
                 <text x="105" y="112" class="flow__addr" text-anchor="middle">0x000…dEaD</text>
                 <text x="105" y="140" class="flow__sub" text-anchor="middle">nothing leaves this address</text>
               </g>
 
-              <text x="-30" y="322" class="flow__sub">Conservation check after every cycle: balance before − spent − gas = balance after, to the wei.</text>
+              <text x="0" y="322" class="flow__sub">Conservation check after every cycle: balance before − spent − gas = balance after, to the wei.</text>
             </svg>
           </div>
         </div>
@@ -416,17 +426,17 @@
       <aside class="loop__panel">
         <div class="panel__head"><h3 class="panel__title">Try a reward</h3></div>
         <p class="panel__text">
-          What one cycle does with a given wallet balance, using the engine's limits and the rate
-          from the most recent burn.
+          What one cycle does with a given amount of claimed rewards, using the engine's limits and
+          the rate from the most recent burn.
         </p>
         <label class="slider" for="throughput">
-          <span class="slider__label">Dev wallet balance</span>
+          <span class="slider__label">Claimed into the wallet</span>
           <span class="slider__value"><span id="throughputValue">0.050</span> <em data-bind="native.symbol">ETH</em></span>
           <input type="range" id="throughput" min="0.001" max="0.5" step="0.001" value="0.05" />
         </label>
         <ul class="loop__outputs" id="loopOutputs">
           <li><span class="k">Gas reserve kept</span><span class="v" id="calcReserve">—</span></li>
-          <li><span class="k">Sent to swap</span><span class="v" id="calcSpend">—</span></li>
+          <li><span class="k">Sent to the buy</span><span class="v" id="calcSpend">—</span></li>
           <li><span class="k">Expected tokens</span><span class="v" id="calcOut">—</span></li>
           <li><span class="k">Minimum accepted</span><span class="v" id="calcMin">—</span></li>
         </ul>
@@ -453,17 +463,20 @@
         <div class="policy__pct" data-bind="policy.buyback.pct">100.00%</div>
         <div>
           <h3 data-bind="policy.buyback.label">Buyback &amp; burn</h3>
-          <p data-bind="policy.buyback.intent">Every creator reward the dev wallet receives is swapped for the token on the DEX, with the swap output sent directly to the burn address.</p>
+          <p data-bind="policy.buyback.intent">Every creator reward claimed from the Pons fee escrow is spent buying the token, on its bonding curve before graduation and on the Uniswap v4 pool after, with the tokens delivered directly to the burn address.</p>
           <p class="policy__meta">Recipient <code data-bind="burnAddress">0x000000000000000000000000000000000000dEaD</code> &middot; policy sha256 <code id="policyHash">…</code></p>
         </div>
       </div>
 
       <dl class="constants__grid">
-        <div><dt>Gas reserve</dt><dd><span data-bind="limits.gasReserve">0.002</span> <span data-bind="native.symbol">ETH</span><small>kept in the wallet so the next cycle can always pay for gas</small></dd></div>
-        <div><dt>Minimum buyback</dt><dd><span data-bind="limits.minBuyback">0.005</span> <span data-bind="native.symbol">ETH</span><small>below this nothing is bought; a tiny swap is mostly gas</small></dd></div>
-        <div><dt>Slippage bound</dt><dd><span data-bind="limits.slippagePct">3.00%</span><small>minOut = quote × (1 − bound); the router reverts below it</small></dd></div>
-        <div><dt>Deadline</dt><dd><span data-bind="limits.deadline">180</span> s<small>a signed swap that is not mined in time is void</small></dd></div>
-        <div><dt>Router call</dt><dd>swapExactETHForTokens<small>SupportingFeeOnTransferTokens; recipient is the burn address</small></dd></div>
+        <div><dt>Cycle</dt><dd>every <span data-bind="limits.interval">180</span> s<small>claim from the escrow, then buy and burn; a quiet cycle does nothing</small></dd></div>
+        <div><dt>Source</dt><dd>Pons fee escrow<small><code data-bind="venues.feeEscrowShort">0xd3AF…Ac9e</code>; claim() pays the caller its accrued creator rewards</small></dd></div>
+        <div><dt>Minimum claim</dt><dd><span data-bind="limits.minClaim">0.0005</span> <span data-bind="native.symbol">ETH</span><small>below this the rewards are left in the escrow for a later cycle</small></dd></div>
+        <div><dt>Gas reserve</dt><dd><span data-bind="limits.gasReserve">0.001</span> <span data-bind="native.symbol">ETH</span><small>kept in the wallet so the next cycle can always pay for gas</small></dd></div>
+        <div><dt>Minimum buyback</dt><dd><span data-bind="limits.minBuyback">0.002</span> <span data-bind="native.symbol">ETH</span><small>below this nothing is bought; a tiny buy is mostly gas</small></dd></div>
+        <div><dt>Slippage bound</dt><dd><span data-bind="limits.slippagePct">3.00%</span><small>minOut = quote × (1 − bound); the market reverts below it</small></dd></div>
+        <div><dt>Venue</dt><dd>curve, then v4<small>Pons bonding curve <code>buy()</code> until graduation; Uniswap v4 via the Universal Router after</small></dd></div>
+        <div><dt>Deadline</dt><dd><span data-bind="limits.deadline">180</span> s<small>a signed buy that is not mined in time is void</small></dd></div>
         <div><dt>Conservation</dt><dd>to the wei<small>before − spent − gas must equal after, or the cycle is not recorded</small></dd></div>
       </dl>
     </div>
@@ -475,7 +488,7 @@
     <header class="section__head section__head--compact">
       <p class="section__kicker"><span class="pipe-tick"></span>Burn log</p>
       <h2 class="section__title">Every cycle, on the record</h2>
-      <p class="section__lede">One row per burn, newest first. Open a row for the quote, the bound, the balances and the block.</p>
+      <p class="section__lede">One row per burn, newest first. Open a row for the venue, the quote, the bound, the claim that fed it and the block.</p>
     </header>
 
     <div class="ledger">
@@ -488,8 +501,8 @@
           <caption class="visually-hidden">Burn cycles with ETH spent, tokens burned, realised slippage, gas and transaction</caption>
           <thead>
             <tr>
-              <th scope="col">#</th><th scope="col">When</th><th scope="col">Spent</th><th scope="col">Burned</th>
-              <th scope="col">vs quote</th><th scope="col">Gas</th><th scope="col">Transaction</th>
+              <th scope="col">#</th><th scope="col">When</th><th scope="col">Venue</th><th scope="col">Spent</th><th scope="col">Burned</th>
+              <th scope="col">vs quote</th><th scope="col">Transaction</th>
               <th scope="col"><span class="visually-hidden">Details</span></th>
             </tr>
           </thead>
@@ -510,7 +523,7 @@
         A burn is a normal transaction. On the explorer, the token's <code>Transfer</code> event in
         that transaction has the burn address as its recipient, and the transaction's value is the
         ETH spent. Paste a hash to look it up in the ledger and get the explorer link; or check it
-        with the CLI, which reads the receipt from the chain.
+        with the CLI, which reads the receipt from Robinhood Chain.
       </p>
     </header>
 
@@ -536,8 +549,8 @@
     </div>
 
     <div class="notes-grid notes-grid--row">
-      <article class="note"><h4>Why the swap delivers to the burn address</h4><p>If tokens landed in the dev wallet first, there would be a moment where they could go somewhere else. Setting the router's recipient to 0x…dEaD removes that moment. The buy and the burn are one atomic transaction.</p></article>
-      <article class="note"><h4>Why a slippage bound</h4><p>A swap with no minimum output is an invitation to be sandwiched. The engine quotes first, sets minOut at the quote less 3%, and the router reverts rather than fill below it. A revert costs gas and nothing else.</p></article>
+      <article class="note"><h4>Why the buy delivers to the burn address</h4><p>If tokens landed in the dev wallet first, there would be a moment where they could go somewhere else. Naming 0x…dEaD as the recipient of the buy removes that moment. The buy and the burn are one atomic transaction, on the curve and on the pool alike.</p></article>
+      <article class="note"><h4>Why a slippage bound</h4><p>A buy with no minimum output is an invitation to be sandwiched. The engine quotes first, sets minOut at the quote less 3%, and the market reverts rather than fill below it. The node refuses such a buy before it is even signed, so it costs nothing.</p></article>
       <article class="note"><h4>Why a gas reserve</h4><p>Spending the wallet to zero would strand the next cycle. A fixed reserve stays behind, and the conservation check confirms gas came out of it, not out of the buyback.</p></article>
     </div>
   </div>
@@ -552,17 +565,19 @@
     <div class="notes">
       <div class="notes__col">
         <h3>What "all creator rewards" means</h3>
-        <p>Everything Pons pays the dev wallet, above a fixed gas reserve, is spent on the token and burned. There is no team allocation from rewards and no second recipient. Gas for the swap comes out of the reserve, which is itself refilled by the next reward.</p>
+        <p>Everything Pons credits the dev wallet in its fee escrow is claimed and, above a fixed gas reserve, spent on the token and burned. There is no team allocation from rewards and no second recipient. Gas for the claim and the buy comes out of the reserve, which is itself refilled by the next reward.</p>
         <h3>What is actually live</h3>
-        <p>The engine is real and tested. The token has not launched, so the burns on this page come from an in-memory mock chain with deterministic rewards, and the ledger says so. Once the token, router and dev wallet addresses are configured, the same code runs against Robinhood Chain and the ledger fills with real transaction hashes.</p>
+        <p>The engine is real and tested: a real EVM runs the claim, the buy and the burn in the test suite, and the Pons and Uniswap v4 calls were checked against Robinhood Chain by simulation. The ledger on this page starts empty and fills only with real transactions. Until the first cycle it shows zero, and that is the truth.</p>
         <h3>Who holds the key</h3>
-        <p>The dev wallet's key is needed only to sign the swap. The engine reads it from the environment at run time, never from a file in the repository, and checks the signer matches the configured wallet before it will send.</p>
+        <p>The dev wallet's key is needed only to sign the claim and the buy. The engine reads it from the environment at run time, never from a file in the repository, and checks the signer matches the configured wallet before it will send.</p>
       </div>
       <div class="notes__col">
         <h3>Quiet cycles</h3>
-        <p>If the spendable balance is under the minimum, nothing is bought and the rewards wait for the next cycle. Spending most of a small reward on gas would be a worse outcome than waiting.</p>
-        <h3>When a swap reverts</h3>
-        <p>If the pool moves more than the bound between quote and fill, the router reverts. The ETH stays in the wallet, gas is spent, and the engine reports it rather than retrying blind. The next cycle quotes again.</p>
+        <p>If nothing is claimable, or the spendable balance is under the minimum, the cycle does nothing and the rewards wait for the next one. Spending most of a small reward on gas would be a worse outcome than waiting.</p>
+        <h3>Before and after graduation</h3>
+        <p>A Pons launch trades on its bonding curve until it graduates, then on a Uniswap v4 pool guarded by the Pons hook. The engine reads the launch record each cycle and buys wherever the token trades now. Both venues deliver to the burn address directly.</p>
+        <h3>When a buy reverts</h3>
+        <p>If the market moves more than the bound between quote and fill, the buy reverts. The ETH stays in the wallet, the engine reports it rather than retrying blind, and the next cycle quotes again.</p>
         <h3>Risk</h3>
         <p>This is an experimental token with no promise of value, liquidity, or return, and a real chance of going to zero. A buyback does not change that. Nothing here is financial advice. Read the code before you touch it.</p>
       </div>
@@ -580,20 +595,21 @@
       <table class="status__table">
         <tbody>
           <tr><th scope="row">Engine</th><td>v<span data-bind="build.version">0.1.0</span> &middot; <span data-bind="build.tests">17</span> tests passing &middot; one runtime dependency (ethers)</td><td><span class="pill pill--ok">ok</span></td></tr>
-          <tr><th scope="row">Chain</th><td><span data-bind="project.chain">Robinhood Chain</span> &middot; chain id <span data-bind="chain.chainId">unset</span></td><td><span class="pill" id="pillChain">unset</span></td></tr>
-          <tr><th scope="row">Token</th><td><span data-bind="token.address">not yet deployed</span></td><td><span class="pill" id="pillToken">unset</span></td></tr>
+          <tr><th scope="row">Chain</th><td><span data-bind="project.chain">Robinhood Chain</span> &middot; chain id <span data-bind="chain.chainId">4663</span></td><td><span class="pill pill--ok" id="pillChain">set</span></td></tr>
+          <tr><th scope="row">Pons</th><td>fee escrow <code data-bind="venues.feeEscrow">0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e</code></td><td><span class="pill pill--ok">verified</span></td></tr>
+          <tr><th scope="row">Token</th><td><span data-bind="token.address">not yet configured</span></td><td><span class="pill" id="pillToken">unset</span></td></tr>
           <tr><th scope="row">Dev wallet</th><td><span data-bind="devWallet">to be provided</span></td><td><span class="pill" id="pillWallet">unset</span></td></tr>
-          <tr><th scope="row">Burns</th><td><span data-bind="totals.burns">0</span> cycles &middot; <span data-bind="modeLabel">mock chain</span></td><td><span class="pill" id="pillMode">synthetic</span></td></tr>
+          <tr><th scope="row">Ledger</th><td><span data-bind="totals.claims">0</span> claims &middot; <span data-bind="totals.burns">0</span> burns &middot; <span data-bind="modeLabel">none yet</span></td><td><span class="pill" id="pillMode">empty</span></td></tr>
           <tr><th scope="row">Site</th><td>Static, built from <code data-bind="build.short">0000000</code> on <span data-bind="build.branch">main</span>, <span data-bind="build.date">today</span></td><td><span class="pill pill--ok">live</span></td></tr>
         </tbody>
       </table>
       <ol class="status__next">
-        <li class="is-done"><span>Engine: plan, execute, conserve; mock chain; test suite</span></li>
-        <li class="is-done"><span>Swap output delivered to the burn address in one transaction</span></li>
-        <li class="is-live"><span>Set Robinhood Chain RPC, chain id, router and WETH from the launch docs</span></li>
-        <li><span>Deploy the token on Pons; set the token and dev wallet addresses</span></li>
-        <li><span><code>faucet doctor</code> clean, then the first live cycle</span></li>
-        <li><span>Schedule cycles (cron or a Vercel cron hitting a small runner) once rewards flow</span></li>
+        <li class="is-done"><span>Engine: claim, plan, execute, conserve; test suite on a real EVM</span></li>
+        <li class="is-done"><span>Buy output delivered to the burn address in one transaction</span></li>
+        <li class="is-done"><span>Robinhood Chain and Pons v2 contracts verified against mainnet by simulation</span></li>
+        <li class="is-done"><span>Bonding-curve and Uniswap v4 routes, chosen from the launch record each cycle</span></li>
+        <li class="is-live"><span>Set the token and dev wallet; <code>faucet doctor</code> clean</span></li>
+        <li><span>Start the runner with the key in its environment; first live cycle</span></li>
       </ol>
     </div>
   </div>

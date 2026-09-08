@@ -1063,3 +1063,25 @@
   .loop__panel { grid-template-columns: 1fr; }
   .loop__panel .loop__outputs { grid-column: 1; grid-row: auto; }
 }
+
+/* quieter pass: the fixture on a plain dark panel, no nameplate, no tiles */
+.scene { max-width: 460px; aspect-ratio: 4 / 5.2; background: linear-gradient(180deg, #141818 0%, #101414 60%, #0e1111 100%); }
+.scene__wall { background: none; }
+.scene__spot { background: radial-gradient(70% 50% at 50% 0%, rgba(255, 255, 255, 0.05), transparent 70%); }
+.scene__glow { background: radial-gradient(60% 60% at 50% 70%, rgba(25, 195, 125, 0.16), transparent 70%); }
+.scene__plaque { display: none; }
+.scene__floor { background: linear-gradient(180deg, transparent 0%, rgba(12, 14, 14, 0.9) 60%, transparent 100%); border-top: 0; }
+.scene__stage { inset: 6% 6% 20% 6%; }
+.fixture__panel { font-family: var(--font-display); font-size: 0.8rem; }
+.fixture__label { font-family: var(--font-display); letter-spacing: 0; text-transform: none; font-size: 0.78rem; }
+.fixture__hint { font-size: 0.74rem; }
+.flow__nodeTitle { font-family: var(--font-display); letter-spacing: 0.02em; font-size: 14px; }
+.flow__title { font-weight: 600; }
+.loop__panel .slider__label { font-family: var(--font-display); letter-spacing: 0; text-transform: none; font-size: 0.82rem; }
+.policy__pct { font-family: var(--font-display); letter-spacing: -0.04em; }
+.policy__meta code { font-size: 0.78rem; }
+.hero__title { font-weight: 600; }
+@media (max-width: 620px) { .scene { max-width: 300px; aspect-ratio: 4 / 5.9; } }
+.eyebrow { font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0; color: var(--muted); }
+.eyebrow__tag { color: var(--text); font-weight: 600; }
+.eyebrow__sha { font-family: var(--font-mono); color: var(--muted); font-size: 0.78rem; }

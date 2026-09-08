@@ -38,6 +38,7 @@
   <div class="shell page__grid">
     <nav class="toc" aria-label="Versions">
       <span class="toc__title">Versions</span>
+      <a href="#v0-3-0">0.3.0</a>
       <a href="#v0-2-0">0.2.0</a>
       <a href="#v0-1-0">0.1.0</a>
     </nav>
@@ -45,9 +46,29 @@
     <article class="prose">
       <h1>Changelog</h1>
       <p class="lede">Every entry links to the commit it came from. Dates are commit dates, UTC. Versions follow <code>package.json</code>.</p>
-      <p>Pre-launch. The engine runs against an in-memory chain until the Robinhood Chain constants, the token and the dev wallet are set; the site says so wherever it shows numbers.</p>
+      <p>Awaiting the first live cycle. The ledger ships empty and fills only with real Robinhood Chain transactions.</p>
 
       <div class="log" id="log">
+        <section class="entry" id="v0-3-0">
+          <div class="entry__meta">
+            <span class="entry__version">0.3.0</span>
+            <span class="entry__date">2026-09-08</span>
+            <span class="entry__sha"><a href="https://github.com/frieshimself-cpu/Faucet/commits/claude/faucet-robinhood-website-21ck7m" rel="noopener">branch</a></span>
+          </div>
+          <div>
+            <h2>Pons claim, curve and v4 routes, verified on Robinhood Chain <span class="tag">engine</span><span class="tag">site</span></h2>
+            <ul>
+              <li><strong>Claim.</strong> Creator rewards accrue in the Pons fee escrow, not the wallet. Each cycle now starts with <code>balanceOf</code> and <code>claim()</code> on the escrow, checked to the wei, before the buy.</li>
+              <li><strong>Routes.</strong> The engine reads the Pons factory's launch record every cycle and buys on the bonding curve before graduation (<code>buy(amountIn, minOut, burn)</code>) or on the Uniswap v4 pool after (Universal Router <code>V4_SWAP</code> with <code>TAKE</code> to the burn address). The Uniswap V2 path is gone; Pons does not use it.</li>
+              <li><strong>Verified.</strong> Every address and call was simulated against Robinhood Chain mainnet (chain id 4663) before being written down: the escrow claim, the curve buy to the burn address, the pool id derivation, the V4 quoter against the router's actual fill, and both slippage reverts. The chain and contract constants are now built in; only the token and the dev wallet come from the environment.</li>
+              <li><strong>Runner.</strong> <code>faucet run</code> cycles claim → plan → execute every 180 s with a lock file, backoff and an optional commit-and-push of the ledger. Docker and systemd files included. <code>faucet doctor</code> checks the launch record and simulates a buy to the burn address.</li>
+              <li><strong>Tests.</strong> 44, including a real EVM node running the signed claim, the buy to the burn address and the wei-exact conservation check against a curve and escrow with the mainnet contracts' external shape and revert selectors.</li>
+              <li><strong>Reset.</strong> The mock burns that used to be shipped as site data are gone. The ledger starts empty; mock runs write under <code>.faucet-mock/</code> and never touch it.</li>
+              <li><strong>Site.</strong> The mechanism now shows the escrow claim, the venue and the burn; stats include what was claimed; the burn log records the venue and the claim that fed each burn.</li>
+            </ul>
+          </div>
+        </section>
+
         <section class="entry" id="v0-2-0">
           <div class="entry__meta">
             <span class="entry__version">0.2.0</span>

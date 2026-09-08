@@ -75,9 +75,9 @@
       const minOut = (expected * (10_000n - slippage)) / 10_000n;
       out('calcReserve').textContent = `${fmtEth(reserve)} ${eth}`;
       out('calcSpend').textContent = `${fmtEth(spendable)} ${eth}`;
-      out('calcOut').textContent = last ? `${fmtTok(expected)} ${tok}` : 'no rate yet';
+      out('calcOut').textContent = last ? `${fmtTok(expected)} ${tok}` : 'no burn yet to take a rate from';
       out('calcMin').textContent = last ? `${fmtTok(minOut)} ${tok}` : '—';
-      out('loopChecksum').innerHTML = `<span class="loop__checksumOk"></span> ${fmtEth(spendable)} + ${fmtEth(reserve)} = ${fmtEth(balance)} ${eth}. Rate from burn #${last ? last.id : '—'}; a live cycle quotes the router instead.`;
+      out('loopChecksum').innerHTML = `<span class="loop__checksumOk"></span> ${fmtEth(spendable)} + ${fmtEth(reserve)} = ${fmtEth(balance)} ${eth}. Rate from burn #${last ? last.id : '—'}; a live cycle quotes the market instead.`;
       void WEI;
     };
     input.addEventListener('input', render);
