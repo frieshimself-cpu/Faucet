@@ -1,13 +1,16 @@
 /**
  * The single source of truth for the Faucet.
  *
- * The site reads a generated copy of this (see `writeSiteData`), so the numbers
- * on the landing page and the numbers the engine actually settles can never
- * drift apart. Change a bps value here and the pipeline diagram changes too.
+ * The site reads a generated copy of this, so the numbers on the page and the
+ * numbers the engine settles with can never drift apart.
+ *
+ * Chain constants are deliberately null until they are confirmed against the
+ * Robinhood Chain and Pons documentation for the launch. `faucet doctor`
+ * refuses to run live until every one of them is set.
  */
 
-import type { Address, BucketId, Bps, Mint, RoutingPolicy } from './types.js';
-import { BPS_DENOMINATOR } from './types.js';
+import type { Address, Asset, BucketId, Bps, RoutingPolicy } from './types.js';
+import { BPS_DENOMINATOR, BURN_ADDRESS } from './types.js';
 
 export interface FaucetConfig {
   readonly project: {
@@ -15,64 +18,55 @@ export interface FaucetConfig {
     readonly ticker: string;
     readonly tagline: string;
     readonly launchpad: string;
-    readonly chain: 'solana';
+    readonly chain: string;
   };
-  readonly mint: Mint;
-  readonly native: Mint;
-  /** Accounts that must never receive a drip (they are the project's own). */
-  readonly excludedFromDrip: readonly Address[];
-  /** Fee-earning accounts the source adapters watch. */
-  readonly feeAccounts: {
-    readonly ponsCreatorVault: Address | null;
-    readonly lpFeeVault: Address | null;
-    readonly treasury: Address | null;
+  readonly chain: {
+    /** Set from the chain's published docs at launch. */
+    readonly chainId: number | null;
+    /** From FAUCET_RPC_URL. */
+    readonly rpcUrl: string | null;
+    /** Prefix for a transaction link, e.g. "https://explorer.example/tx/". */
+    readonly explorerTx: string | null;
   };
-  readonly epoch: {
-    /** Target epoch length. Solana averages ~2.5 slots/second. */
-    readonly slots: number;
-    /** Below this, the epoch rolls forward instead of settling — dust is not worth the fees. */
-    readonly minSettleRaw: bigint;
-    /** A holder under this balance is not counted; stops sybil dust farming the drip. */
-    readonly minHolderBalanceRaw: bigint;
+  readonly token: Asset;
+  readonly native: Asset;
+  /** The wallet Pons pays creator rewards into. Signs the buybacks. */
+  readonly devWallet: Address | null;
+  readonly burnAddress: Address;
+  readonly dex: {
+    readonly kind: 'uniswap-v2';
+    /** UniswapV2Router02-compatible router on Robinhood Chain. */
+    readonly router: Address | null;
+    /** Wrapped native token the router paths through. */
+    readonly weth: Address | null;
+  };
+  readonly limits: {
+    /** Left in the wallet so the next cycle can always pay for gas. */
+    readonly gasReserveWei: bigint;
+    /** Below this, nothing is bought; a tiny swap is mostly gas. */
+    readonly minBuybackWei: bigint;
+    /** Maximum accepted drop from the quote before the swap reverts. */
+    readonly slippageBps: Bps;
+    /** How long a signed swap stays valid. */
+    readonly deadlineSeconds: number;
   };
   readonly routing: RoutingPolicy;
 }
 
 /**
- * The routing policy. Every basis point lands in something the project owns or
- * the holders own — there is no "team" bucket and no outbound wallet that isn't
- * named here. `assertPolicyBalanced` is what actually enforces the "100% back
- * in" claim on the site; it runs on import and on every cycle.
+ * One rule. Every basis point of creator rewards is spent buying the token
+ * and the swap delivers straight to the burn address, so the tokens never
+ * sit in a wallet anyone controls.
  */
 export const ROUTING: RoutingPolicy = {
   rules: [
     {
       bucket: 'buyback',
-      bps: 3_500,
-      label: 'Buyback & Burn',
-      intent: 'Market-buys the token with collected fees and burns what it buys. Supply only goes down.',
-      destination: null,
-    },
-    {
-      bucket: 'drip',
-      bps: 3_500,
-      label: 'Holder Drip',
-      intent: 'Split across eligible holders by time-weighted balance, claimable from the faucet.',
-      destination: null,
-    },
-    {
-      bucket: 'liquidity',
-      bps: 2_000,
-      label: 'Liquidity Deepening',
-      intent: 'Paired and added to the pool as protocol-owned liquidity. Never withdrawn.',
-      destination: null,
-    },
-    {
-      bucket: 'treasury',
-      bps: 1_000,
-      label: 'Build Fund',
-      intent: 'On-chain treasury for tooling, audits, integrations. Spends are published per epoch.',
-      destination: null,
+      bps: 10_000,
+      label: 'Buyback & burn',
+      intent:
+        'Every creator reward the dev wallet receives is swapped for the token on the DEX, ' +
+        'with the swap output sent directly to the burn address.',
     },
   ],
 };
@@ -81,32 +75,37 @@ export const CONFIG: FaucetConfig = {
   project: {
     name: 'Robinhood',
     ticker: 'ROBIN',
-    tagline: 'Every fee drips back to the people it came from.',
+    tagline: 'Every creator reward buys the coin back and burns it.',
     launchpad: 'Pons',
-    chain: 'solana',
+    chain: 'Robinhood Chain',
   },
-  mint: {
-    // Set at launch. Until then the engine runs against the mock adapters.
-    address: null,
+  chain: {
+    chainId: envInt('FAUCET_CHAIN_ID'),
+    rpcUrl: process.env['FAUCET_RPC_URL'] ?? null,
+    explorerTx: process.env['FAUCET_EXPLORER_TX'] ?? null,
+  },
+  token: {
+    address: envAddress('FAUCET_TOKEN'),
     symbol: 'ROBIN',
-    decimals: 6,
+    decimals: 18,
   },
   native: {
     address: null,
-    symbol: 'SOL',
-    decimals: 9,
+    symbol: 'ETH',
+    decimals: 18,
   },
-  excludedFromDrip: [],
-  feeAccounts: {
-    ponsCreatorVault: null,
-    lpFeeVault: null,
-    treasury: null,
+  devWallet: envAddress('FAUCET_DEV_WALLET'),
+  burnAddress: BURN_ADDRESS,
+  dex: {
+    kind: 'uniswap-v2',
+    router: envAddress('FAUCET_ROUTER'),
+    weth: envAddress('FAUCET_WETH'),
   },
-  epoch: {
-    // ~6 hours at 2.5 slots/sec.
-    slots: 54_000,
-    minSettleRaw: 10_000_000n, // 0.01 SOL
-    minHolderBalanceRaw: 1_000_000n, // 1 ROBIN
+  limits: {
+    gasReserveWei: 2_000_000_000_000_000n, // 0.002 ETH
+    minBuybackWei: 5_000_000_000_000_000n, // 0.005 ETH
+    slippageBps: 300, // 3%
+    deadlineSeconds: 180,
   },
   routing: ROUTING,
 };
@@ -114,18 +113,16 @@ export const CONFIG: FaucetConfig = {
 export class PolicyError extends Error {}
 
 /**
- * Fails loudly if the routing policy does not allocate exactly 100%, or if a
- * bucket appears twice. This is the invariant the whole project is named after:
- * nothing collected is allowed to fall out of the system.
+ * Fails loudly if the routing policy does not allocate exactly 100%. This is
+ * the invariant the whole project is named after: nothing collected is
+ * allowed to fall out of the system.
  */
 export function assertPolicyBalanced(policy: RoutingPolicy): void {
   const seen = new Set<BucketId>();
   let total: Bps = 0;
 
   for (const rule of policy.rules) {
-    if (seen.has(rule.bucket)) {
-      throw new PolicyError(`duplicate bucket in routing policy: ${rule.bucket}`);
-    }
+    if (seen.has(rule.bucket)) throw new PolicyError(`duplicate bucket in routing policy: ${rule.bucket}`);
     if (!Number.isInteger(rule.bps) || rule.bps <= 0) {
       throw new PolicyError(`bucket ${rule.bucket} has a non-positive or fractional bps: ${rule.bps}`);
     }
@@ -136,9 +133,36 @@ export function assertPolicyBalanced(policy: RoutingPolicy): void {
   if (total !== BPS_DENOMINATOR) {
     throw new PolicyError(
       `routing policy allocates ${total} bps, expected exactly ${BPS_DENOMINATOR}. ` +
-        `The Faucet only ships when 100% of fees are accounted for.`,
+        `The Faucet only ships when 100% of rewards are accounted for.`,
     );
   }
+}
+
+/** Which live-mode settings are still missing. Empty means ready. */
+export function missingForLive(config: FaucetConfig): string[] {
+  const missing: string[] = [];
+  if (!config.chain.rpcUrl) missing.push('FAUCET_RPC_URL');
+  if (config.chain.chainId === null) missing.push('FAUCET_CHAIN_ID');
+  if (!config.token.address) missing.push('FAUCET_TOKEN');
+  if (!config.devWallet) missing.push('FAUCET_DEV_WALLET');
+  if (!config.dex.router) missing.push('FAUCET_ROUTER');
+  if (!config.dex.weth) missing.push('FAUCET_WETH');
+  return missing;
+}
+
+function envAddress(name: string): Address | null {
+  const value = process.env[name];
+  if (!value) return null;
+  if (!/^0x[0-9a-fA-F]{40}$/.test(value)) throw new PolicyError(`${name} is not a 20-byte hex address: ${value}`);
+  return value as Address;
+}
+
+function envInt(name: string): number | null {
+  const value = process.env[name];
+  if (!value) return null;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n <= 0) throw new PolicyError(`${name} must be a positive integer, got ${value}`);
+  return n;
 }
 
 assertPolicyBalanced(ROUTING);

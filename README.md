@@ -1,18 +1,16 @@
 # Faucet
 
-**Robinhood ($ROBIN) on Pons — every fee drips back into the project.**
-
-Two things live in this repo:
+**Robinhood ($ROBIN) on Pons, Robinhood Chain — every creator reward buys the coin back and burns it.**
 
 | | |
 |---|---|
-| `engine/` | The fee-recycling engine. Collects fees, routes 100% of them into four buckets, builds a Merkle claim tree for the holder drip, and publishes an auditable receipt per epoch. |
-| `site/` | The website. Static, no backend: the same policy and epoch data the engine settles with, a ledger with per-epoch detail, an in-browser drip verifier (`scripts/merkle.js`, cross-tested against the engine), docs, and a changelog. Every page carries the commit it was built from. |
+| `engine/` | The buyback-and-burn engine. Reads the dev wallet, keeps a gas reserve, swaps the rest for the token with the router's recipient set to the burn address, and refuses to record a cycle unless every wei is accounted for. |
+| `site/` | The website. Static, no backend: the ledger the engine wrote, a burn log with per-cycle detail, a transaction lookup, docs, and a changelog. Every page carries the commit it was built from. |
 
-The claim the site makes is enforced by code, not by copy: `assertPolicyBalanced()`
-throws unless the routing policy allocates exactly 10,000 basis points, and
-`assertConserved()` throws unless every lamport collected in an epoch either left
-in a settlement intent or was explicitly carried into the next one.
+Two invariants are enforced in code, not copy. `assertPolicyBalanced()` throws
+unless the routing policy allocates exactly 10,000 basis points, and runs on
+import. After every swap the engine checks `balance_before − spent − gas ==
+balance_after`, to the wei, and will not record the cycle otherwise.
 
 ---
 
@@ -20,73 +18,75 @@ in a settlement intent or was explicitly carried into the next one.
 
 ```bash
 npm install
-npm test                 # typecheck + 38 tests
-npm run policy           # print the split and prove it sums to 100%
-npm run cycle            # settle 6 synthetic epochs and regenerate the site data
+npm test                 # typecheck + 17 tests against an in-memory chain
+npm run policy           # print the one rule and prove it sums to 100%
+npm run cycle            # 6 mock burn cycles; regenerates the site data
 npm run serve            # http://localhost:4173
 ```
 
-`npm run cycle` runs against deterministic mock fee sources, because the token has
-not launched yet. The site labels its data accordingly — it says **synthetic** in
-the ledger footer until a real mint address is configured.
+`npm run cycle` runs against the mock chain because the token has not launched.
+The site labels every number that comes from it as synthetic.
 
 ---
 
-## The split
+## What one cycle does
 
-| Bucket | Share | What happens to it |
+```
+Pons creator rewards (ETH) ─→ dev wallet
+                                 ├─ keep the gas reserve            0.002 ETH
+                                 └─ spend the rest ─→ router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+                                                        amountOutMin = quote × (1 − 3%),
+                                                        path = [WETH, ROBIN],
+                                                        to   = 0x000000000000000000000000000000000000dEaD )
+                                                      ─→ read Transfer(ROBIN → 0x…dEaD) from the receipt
+                                                      ─→ balance check, to the wei
+                                                      ─→ ledger entry (site/data/burns.json)
+```
+
+The recipient of the swap is the burn address, so the tokens go from the pool to
+0x…dEaD inside the same transaction and never sit in a wallet anyone controls.
+
+| Limit | Default | Why |
 |---|---|---|
-| Buyback & Burn | 35.00% | Market-buys the token and burns what it buys. |
-| Holder Drip | 35.00% | Split by time-weighted balance; claimed with a Merkle proof. |
-| Liquidity Deepening | 20.00% | Added to the pool as protocol-owned liquidity. |
-| Build Fund | 10.00% | On-chain treasury for tooling, audits, integrations. |
-
-There is no team bucket and no outbound wallet that is not on that list. Network
-transaction fees paid to validators to *make* those transfers are unavoidable and
-come out of the build fund.
-
-The split lives in exactly one place — [`engine/src/config.ts`](engine/src/config.ts) —
-and the site renders a generated copy of it, so the page and the settlement can't
-disagree.
+| Gas reserve | 0.002 ETH | Left behind so the next cycle can always pay for gas. |
+| Minimum buyback | 0.005 ETH | Below this nothing is bought; a tiny swap is mostly gas. |
+| Slippage bound | 3% | `amountOutMin` from a fresh quote; the router reverts below it. |
+| Deadline | 180 s | A signed swap not mined in time is void. |
 
 ---
 
 ## CLI
 
 ```
-faucet policy                          show the routing policy
-faucet cycle [--epochs N] [--seed N]   run epochs (mock sources unless --live)
-         [--live] [--write-site] [--out DIR]
-faucet verify <claims.json> <owner>    verify a published claim proof
-faucet doctor                          sanity-check config and RPC
+faucet policy                       show the routing policy
+faucet plan [--mock]                read the wallet and quote the buyback (no spend)
+faucet burn [--execute] [--mock]    run a cycle; --execute sends the swap
+            [--rounds N] [--write-site]
+faucet status                       totals from the burn ledger
+faucet verify <txhash>              confirm a tx burned the token
+faucet doctor                       check config, RPC and signer
 ```
 
-Verifying a drip needs nothing but the published claim file:
-
-```
-$ npm run faucet -- verify out/claims/epoch-3.json Hood042xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-  proof valid
-  owner  Hood042xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  index  42
-  amount 0.0006 SOL
-  proof  7 node(s)
-  root   0x168163ee52ae9bf84eec35874632371dc0d0600fb5b4213b5dd6b42eb2500468
-```
+`--execute` is the only flag that spends anything, and only with a signer that
+matches the configured dev wallet.
 
 ---
 
 ## Going live
 
-1. Mint the token on Pons.
-2. Fill in `CONFIG.mint.address` and `CONFIG.feeAccounts.*` in `engine/src/config.ts`.
-3. Set `FAUCET_RPC_URL` (copy `.env.example` to `.env`).
-4. `npm run doctor` — every check must pass.
-5. `npm run build && node dist/src/cli.js cycle --live --write-site && npm run sync:fallback`
+1. Copy `.env.example` to `.env`. Fill in the Robinhood Chain RPC, chain id and
+   explorer prefix, the router and WETH, the token, and the dev wallet. These are
+   deliberately not in the repository until confirmed against the launch docs.
+2. `npm run doctor` — every check must pass. It pins the chain id, reads the
+   wallet and the token supply, and gets a quote from the router.
+3. `npm run plan` — see what one cycle would do, with nothing sent.
+4. Export `FAUCET_DEV_WALLET_KEY` in the shell (never in a file), then
+   `node dist/src/cli.js burn --execute --write-site`.
+5. Commit and push the ledger; the site redeploys with the burn.
 
-Settlement signing is deliberately *not* wired to a key in this build. `cycle`
-computes and publishes settlement intents; broadcasting them is a separate,
-explicit step. See [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
+The engine will not send if the signer is not the configured wallet, if the
+swap recipient is not the burn address, or if the plan does not account for the
+whole balance. See [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 
 ---
 
@@ -94,64 +94,28 @@ explicit step. See [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ffrieshimself-cpu%2FFaucet)
 
-The repo is Vercel-ready as committed. `vercel.json` tells Vercel three things:
-
-| Setting | Value | Why |
-|---|---|---|
-| `outputDirectory` | `site` | The site is a plain static directory. No bundler, no framework. |
-| `buildCommand` | `npm run build && npm run policy` | Typechecks the engine and runs `faucet policy`, which throws unless the split sums to exactly 100%. **A deploy fails if the policy leaks a basis point.** |
-| `headers` | CSP, `nosniff`, `DENY` framing, no-cache on data | The page has no inline scripts, so the CSP is strict. `data/faucet.json` is never cached, so a fresh cycle shows up immediately. |
-
-Two ways to ship it:
-
-**From the dashboard.** Click the button above, or import the repo at
-[vercel.com/new](https://vercel.com/new). Vercel reads `vercel.json`; there is
-nothing to configure. Every push to `main` deploys production; every other
-branch gets a preview URL.
-
-**From the CLI.**
+`vercel.json` serves `site/` and uses the build step as a guard: it typechecks
+the engine and runs `faucet policy`, which throws unless the policy sums to
+100%. Headers include a strict Content-Security-Policy (no inline scripts) and
+`data/` is served uncached so a fresh burn shows on the next load.
 
 ```bash
 npm i -g vercel
-vercel          # preview
-vercel --prod   # production
+vercel --prod
 ```
 
-`npm run serve` applies the same headers `vercel.json` declares, CSP included,
-and serves `404.html` for missing routes — so anything that would break in
-production breaks on `localhost:4173` first.
+`npm run serve` applies the same headers locally, CSP included.
 
-### Updating the numbers on a deployed site
-
-```bash
-npm run cycle       # regenerates site/data/faucet.json and the bundled fallback
-git commit -am "epoch N"
-git push            # Vercel redeploys
-```
-
-The page reads `data/faucet.json` on load and the header rules keep it
-uncached, so the new epoch is live as soon as the deploy is.
-
-### Any other static host
-
-Point GitHub Pages (Settings → Pages → *Deploy from a branch*, folder `/site`),
-Netlify, Cloudflare Pages, or an S3 bucket at the `site/` directory. Nothing in
-it needs a server. Served over HTTP the page fetches `data/faucet.json`; opened
-straight off disk it falls back to the snapshot baked into
-`site/scripts/data.js`, which `npm run sync:fallback` regenerates. The footer
-says which one you are looking at.
+---
 
 ## Architecture
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the data flow, the
-attack-resistance notes behind the Merkle implementation, and why the drip is
-time-weighted rather than snapshotted.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ---
 
 ## A word of caution
 
 This is an experimental crypto project. There is no promise of value, liquidity or
-return, and none of the mechanics here remove the risk of the token going to zero.
-Nothing in this repository is financial advice or an offer of anything. Read the
-code before you touch it.
+return, and a buyback does not remove the risk of the token going to zero.
+Nothing in this repository is financial advice. Read the code before you touch it.

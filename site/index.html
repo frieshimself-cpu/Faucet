@@ -3,73 +3,49 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Robinhood — fee-recycling on Pons</title>
-<meta name="description" content="Robinhood ($ROBIN) on Pons. Every six hours the Faucet sweeps the fee vaults, splits 100% of the total four ways by a fixed policy, and publishes a Merkle root over the holder drip. Verify your own drip in the browser." />
-<meta name="theme-color" content="#04070a" />
-<meta property="og:title" content="Robinhood — fee-recycling on Pons" />
-<meta property="og:description" content="100% of collected fees routed back into the project, provably, every epoch." />
+<title>Robinhood — buyback and burn on Pons</title>
+<meta name="description" content="Robinhood ($ROBIN) on Pons, Robinhood Chain. Every creator reward the dev wallet receives is swapped for the token with the output delivered straight to the burn address. Every burn is a public transaction." />
+<meta name="theme-color" content="#0c0e0e" />
+<meta property="og:title" content="Robinhood — buyback and burn on Pons" />
+<meta property="og:description" content="100% of creator rewards buy the coin back and burn it. Verifiable on-chain, every cycle." />
 <meta property="og:type" content="website" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
 <link rel="stylesheet" href="styles/base.css" />
 <link rel="stylesheet" href="styles/components.css" />
 <link rel="stylesheet" href="styles/scenes.css" />
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<div class="grain" aria-hidden="true"></div>
-<div class="vignette" aria-hidden="true"></div>
-
-<!-- ═══════════════════════════════════ NAV ═════════════════════════════════ -->
 
 <header class="nav" id="nav">
-  <div class="nav__rail" aria-hidden="true"></div>
   <div class="shell nav__inner">
     <a class="brand" href="/" aria-label="Robinhood home">
-      <span class="brand__mark" aria-hidden="true">
-        <svg viewBox="0 0 44 44" fill="none">
-          <rect x="3" y="11" width="9" height="13" rx="3" fill="url(#bm)"/>
-          <path d="M10 17.5h13a6.5 6.5 0 0 1 6.5 6.5v3.5" stroke="url(#bm)" stroke-width="5.5" stroke-linecap="round"/>
-          <rect x="25.5" y="26" width="8" height="7" rx="2.5" fill="url(#bm)"/>
-          <circle class="brand__drop" cx="29.5" cy="38" r="3.6" fill="var(--water)"/>
-          <defs>
-            <linearGradient id="bm" x1="3" y1="11" x2="33" y2="33" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#fdeacd"/><stop offset=".42" stop-color="#c07c37"/><stop offset="1" stop-color="#6b3d18"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </span>
+      <span class="brand__mark" aria-hidden="true"><img src="/favicon.svg" alt="" width="32" height="32" /></span>
       <span class="brand__text">
         <strong data-bind="project.name">Robinhood</strong>
         <em data-bind="project.tickerTag">$ROBIN</em>
       </span>
     </a>
-
     <nav class="nav__links" aria-label="Primary">
       <a href="#mechanism"><span>Mechanism</span></a>
-      <a href="#split"><span>Split</span></a>
+      <a href="#policy"><span>Policy</span></a>
+      <a href="#burns"><span>Burn log</span></a>
       <a href="#verify"><span>Verify</span></a>
-      <a href="#ledger"><span>Ledger</span></a>
       <a href="/docs"><span>Docs</span></a>
       <a href="/changelog"><span>Changelog</span></a>
       <a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener"><span>GitHub</span></a>
     </nav>
-
-    <span class="nav__build" id="navBuild" title="Build stamp">v0.1.0</span>
-    <a class="btn btn--ghost btn--sm" href="#verify">Verify a drip</a>
+    <span class="nav__build" id="navBuild">v0.1.0</span>
+    <a class="btn btn--ghost btn--sm" href="#burns">Burn log</a>
   </div>
 </header>
 
 <main id="main">
 
-<!-- ═══════════════════════════════════ HERO ════════════════════════════════ -->
-
 <section class="hero" id="top">
-  <div class="hero__plan" aria-hidden="true"></div>
-  <div class="hero__glow" aria-hidden="true"></div>
-
   <div class="shell hero__inner">
     <div class="hero__copy">
       <p class="eyebrow" id="heroStamp">
@@ -77,40 +53,40 @@
         <span class="eyebrow__sep" aria-hidden="true"></span>
         <span data-bind="build.stage">pre-launch</span>
         <span class="eyebrow__sep" aria-hidden="true"></span>
-        engine <span data-bind="build.tests">42</span>/<span data-bind="build.tests">42</span>
+        <span data-bind="project.chain">Robinhood Chain</span>
+        <span class="eyebrow__sep" aria-hidden="true"></span>
+        engine <span data-bind="build.tests">17</span> tests
         <span class="eyebrow__sep" aria-hidden="true"></span>
         <code class="eyebrow__sha" data-bind="build.short">0000000</code>
       </p>
 
       <h1 class="hero__title" data-split>
-        <span class="line">Every fee</span>
-        <span class="line"><em class="ink">drips back</em></span>
-        <span class="line">into the project.</span>
+        <span class="line">Every creator reward</span>
+        <span class="line">buys the coin back</span>
+        <span class="line">and <em class="ink">burns it.</em></span>
       </h1>
 
       <p class="hero__lede">
-        Robinhood is a token on <strong data-bind="project.launchpad">Pons</strong> whose fee stream is
-        wired back into itself. Every six hours the engine sweeps the creator vault and the pool's
-        fees, splits the total four ways by a fixed policy, publishes a Merkle root over the holder
-        drip, and refuses to settle if a single lamport is unaccounted for.
+        Robinhood is a token launched on <strong data-bind="project.launchpad">Pons</strong>, on
+        <strong data-bind="project.chain">Robinhood Chain</strong>. The creator rewards Pons pays the
+        dev wallet are not kept. Each cycle the engine spends everything above a small gas reserve
+        buying the token on the DEX, and the swap delivers the tokens straight to the burn address.
+        They never sit in a wallet anyone controls.
       </p>
       <p class="hero__lede hero__lede--small">
-        This page renders the file the engine wrote. There is no server between you and the numbers.
+        Every burn is a single public transaction. This page renders the ledger the engine wrote.
       </p>
 
       <div class="hero__actions">
-        <a class="btn btn--primary" href="#mechanism">
-          <span class="btn__drip" aria-hidden="true"></span>
-          How it routes
-        </a>
-        <a class="btn btn--ghost" href="#verify">Verify a drip</a>
+        <a class="btn btn--primary" href="#mechanism">How it works</a>
+        <a class="btn btn--ghost" href="#burns">See the burns</a>
         <a class="hero__docs" href="/docs">Read the docs <span aria-hidden="true">&rarr;</span></a>
       </div>
 
       <div class="ca">
-        <span class="ca__label">Mint</span>
-        <code class="ca__value" id="contractValue" data-bind="mint.address">not yet minted</code>
-        <button class="ca__copy" type="button" data-copy-target="#contractValue" aria-label="Copy mint address">
+        <span class="ca__label">Token</span>
+        <code class="ca__value" id="contractValue" data-bind="token.address">not yet deployed</code>
+        <button class="ca__copy" type="button" data-copy-target="#contractValue" aria-label="Copy token address">
           <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6.5" y="6.5" width="10" height="12" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M13.5 4.5h-8a2 2 0 0 0-2 2v9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
           <span class="ca__copy-text">Copy</span>
         </button>
@@ -120,12 +96,11 @@
     <div class="hero__fixture">
       <div class="scene" id="scene">
         <div class="scene__wall" aria-hidden="true"></div>
-        <canvas class="scene__caustics" id="causticsCanvas" aria-hidden="true"></canvas>
         <div class="scene__spot" aria-hidden="true"></div>
         <div class="scene__glow" aria-hidden="true"></div>
         <div class="scene__plaque" aria-hidden="true">
           <span class="scene__plaqueName" data-bind="project.nameUpper">ROBINHOOD</span>
-          <span class="scene__plaqueNo">FAUCET N&deg; 001 &middot; SOL</span>
+          <span class="scene__plaqueNo">BUYBACK &amp; BURN &middot; N&deg; 001</span>
         </div>
         <div class="scene__stage">
           <canvas class="fixture__canvas" id="waterCanvas" aria-hidden="true"></canvas>
@@ -309,578 +284,216 @@
         <div class="scene__floor" aria-hidden="true"></div>
         <div class="scene__readouts">
           <div class="fixture__panel" role="status" aria-live="polite">
-            <span class="fixture__led" aria-hidden="true"></span>
             <span class="fixture__label">Flow</span>
             <span class="fixture__value" id="flowReadout">72%</span>
             <span class="fixture__hint">drag the handle</span>
           </div>
           <div class="fixture__panel fixture__panel--total">
-            <span class="fixture__label">Total recycled</span>
-            <span class="fixture__value" id="tankValue">0.0000 SOL</span>
+            <span class="fixture__label">Burned</span>
+            <span class="fixture__value" id="tankValue">0 ROBIN</span>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="ticker" aria-hidden="true">
-    <div class="ticker__track" id="tickerTrack"></div>
-    <div class="ticker__fade ticker__fade--l"></div>
-    <div class="ticker__fade ticker__fade--r"></div>
-  </div>
-
   <div class="shell">
     <ul class="stats" id="stats">
       <li class="stat">
-        <span class="stat__label">Fees recycled</span>
-        <span class="stat__value"><span data-count data-bind="totals.recycledNum">0</span> <em>SOL</em></span>
-        <span class="stat__note">100% of everything collected</span>
-        <span class="stat__spark" data-spark="collected" aria-hidden="true"></span>
+        <span class="stat__label">Rewards spent</span>
+        <span class="stat__value"><span data-count data-bind="totals.ethSpentNum">0</span> <em data-bind="native.symbol">ETH</em></span>
+        <span class="stat__note">100% of creator rewards, less gas reserve</span>
+        <span class="stat__spark" data-spark="eth" aria-hidden="true"></span>
       </li>
       <li class="stat">
-        <span class="stat__label">Dripped to holders</span>
-        <span class="stat__value"><span data-count data-bind="totals.drippedNum">0</span> <em>SOL</em></span>
-        <span class="stat__note"><span data-bind="totals.recipients">0</span> wallets, claimable by proof</span>
-        <span class="stat__spark" data-spark="drip" aria-hidden="true"></span>
+        <span class="stat__label">Tokens burned</span>
+        <span class="stat__value"><span data-count data-bind="totals.tokensBurnedNum">0</span> <em data-bind="token.symbol">ROBIN</em></span>
+        <span class="stat__note">delivered by the swap to 0x…dEaD</span>
+        <span class="stat__spark stat__spark--burn" data-spark="tokens" aria-hidden="true"></span>
       </li>
       <li class="stat">
-        <span class="stat__label">Bought &amp; burned</span>
-        <span class="stat__value"><span data-count data-bind="totals.burnedNum">0</span> <em>SOL</em></span>
-        <span class="stat__note">spent on market, sent to the burn address</span>
-        <span class="stat__spark stat__spark--burn" data-spark="burn" aria-hidden="true"></span>
+        <span class="stat__label">Supply burned</span>
+        <span class="stat__value"><span data-bind="totals.supplyBurnedPct">—</span></span>
+        <span class="stat__note">of total supply at the last cycle</span>
+        <span class="stat__spark stat__spark--build" data-spark="cumulative" aria-hidden="true"></span>
       </li>
       <li class="stat">
-        <span class="stat__label">Epochs settled</span>
-        <span class="stat__value"><span data-count data-bind="totals.epochs">0</span></span>
-        <span class="stat__note">54,000 slots each, about six hours</span>
-        <span class="stat__spark stat__spark--build" data-spark="epochs" aria-hidden="true"></span>
+        <span class="stat__label">Burn cycles</span>
+        <span class="stat__value"><span data-count data-bind="totals.burns">0</span></span>
+        <span class="stat__note">one transaction each, all public</span>
+        <span class="stat__spark" data-spark="gas" aria-hidden="true"></span>
       </li>
     </ul>
-    <p class="stats__source" id="statsSource">Source: <code>data/faucet.json</code>, written by <code>faucet cycle</code>.</p>
+    <p class="stats__source" id="statsSource">Source: <code>data/faucet.json</code>, written by <code>faucet burn --write-site</code>.</p>
   </div>
 </section>
 
-<div class="joint" data-joint aria-hidden="true"><svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
-    <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
-    <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
-    <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
-    <rect class="joint__water" x="35" y="0" width="10" height="200"/>
-    <rect class="joint__flange" x="14" y="0" width="52" height="14" rx="4"/>
-    <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
-    <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
-    <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg></div>
-
-<!-- ═══════════════════════════════════ MECHANISM ═══════════════════════════ -->
-
 <section class="section" id="mechanism">
   <div class="shell">
-    <header class="section__head" data-num="01">
+    <header class="section__head">
       <p class="section__kicker"><span class="pipe-tick"></span>Mechanism</p>
-      <h2 class="section__title">Two inlets, one manifold, <em class="ink">four outlets.</em></h2>
+      <h2 class="section__title">One inlet, one outlet, <em class="ink">no wallet in between.</em></h2>
       <p class="section__lede">
-        Fees come from the Pons creator vault and from the pool's trading fees. Once per epoch the
-        engine reads every finalized credit to those accounts inside the slot window, adds anything
-        carried over from a previous epoch, and routes the total. The four outlets are the only
-        outlets. The routing step runs a conservation check and throws, rather than settling, if
-        what was routed differs from what was collected by even one lamport.
+        Pons pays creator rewards to the dev wallet in ETH. Each cycle the engine reads the balance,
+        keeps a fixed gas reserve, and sends the rest into a single router call:
+        <code>swapExactETHForTokens</code> with the recipient set to the burn address. The tokens go
+        from the pool to 0x…dEaD in the same transaction. The engine then checks the wallet moved by
+        exactly the amount sent plus gas, and refuses to record the cycle if it did not.
       </p>
     </header>
 
     <div class="loop">
       <div class="loop__canvas">
         <div class="loop__frame">
-          <span class="screw screw--tl" aria-hidden="true"></span>
-          <span class="screw screw--tr" aria-hidden="true"></span>
-          <span class="screw screw--bl" aria-hidden="true"></span>
-          <span class="screw screw--br" aria-hidden="true"></span>
           <div class="loop__stage">
-            <svg class="flow" id="flowDiagram" viewBox="-60 0 1420 640" role="img"
-                 aria-label="Fee routing diagram: Pons creator fees and LP trading fees flow into the Faucet manifold, which splits into buyback and burn, holder drip, liquidity, and build fund.">
+            <svg class="flow" id="flowDiagram" viewBox="-60 0 1450 360" role="img"
+                 aria-label="Creator rewards flow from Pons into the dev wallet, through a DEX swap, and into the burn address.">
               <defs>
                 <linearGradient id="pipeSkin" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0"    stop-color="#f0c493"/>
-                  <stop offset="0.22" stop-color="#c07c37"/>
-                  <stop offset="0.55" stop-color="#7a4720"/>
-                  <stop offset="0.82" stop-color="#a2621f"/>
-                  <stop offset="1"    stop-color="#2f1607"/>
+                  <stop offset="0" stop-color="#e2b17c"/><stop offset="0.3" stop-color="#b87333"/>
+                  <stop offset="0.65" stop-color="#7a4720"/><stop offset="1" stop-color="#3a2010"/>
                 </linearGradient>
-                <linearGradient id="manifoldSkin" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0"   stop-color="#1c2d2a"/>
-                  <stop offset="0.5" stop-color="#0c1614"/>
-                  <stop offset="1"   stop-color="#04090a"/>
+                <linearGradient id="nodeSkin" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#1c2222"/><stop offset="1" stop-color="#0f1313"/>
                 </linearGradient>
-                <filter id="flowGlow" x="-40%" y="-40%" width="180%" height="180%">
-                  <feGaussianBlur stdDeviation="7" result="b"/>
-                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
               </defs>
 
-              <!-- casings -->
-              <g class="flow__casing" fill="none" stroke="url(#pipeSkin)" stroke-width="30" stroke-linecap="round">
-                <path d="M-60 160 H360 C420 160 430 215 430 270 H470"/>
-                <path d="M-60 480 H360 C420 480 430 425 430 370 H470"/>
-                <path d="M670 260 H740 C800 260 800 100 860 100 H890"/>
-                <path d="M670 295 H760 C820 295 820 240 880 240 H890"/>
-                <path d="M670 345 H760 C820 345 820 400 880 400 H890"/>
-                <path d="M670 380 H740 C800 380 800 540 860 540 H890"/>
+              <g class="flow__casing" fill="none" stroke="url(#pipeSkin)" stroke-width="26" stroke-linecap="round">
+                <path d="M-60 180 H250"/>
+                <path d="M470 180 H700"/>
+                <path d="M920 180 H1150"/>
+              </g>
+              <g class="flow__bore" fill="none" stroke="#0a0d0d" stroke-width="15" stroke-linecap="round">
+                <path d="M-60 180 H250"/><path d="M470 180 H700"/><path d="M920 180 H1150"/>
+              </g>
+              <g class="flow__water" fill="none" stroke-width="9" stroke-linecap="round">
+                <path class="flow__stream" data-bucket="inlet" d="M-60 180 H250"/>
+                <path class="flow__stream" data-bucket="inlet" d="M470 180 H700"/>
+                <path class="flow__stream flow__stream--burn" data-bucket="buyback" d="M920 180 H1150"/>
               </g>
 
-              <!-- top specular line on every run -->
-              <g class="flow__sheen" fill="none" stroke="#ffe9cc" stroke-width="3" stroke-linecap="round" opacity=".28">
-                <path d="M-60 150 H360 C420 150 421 215 421 270 H470"/>
-                <path d="M-60 470 H360 C420 470 421 425 421 370 H470"/>
-                <path d="M670 250 H740 C792 250 791 90 851 90 H890"/>
-                <path d="M670 285 H760 C812 285 811 230 871 230 H890"/>
-                <path d="M670 335 H760 C812 335 811 390 871 390 H890"/>
-                <path d="M670 370 H740 C792 370 791 530 851 530 H890"/>
+              <g class="flow__couplings" fill="url(#pipeSkin)">
+                <rect x="96" y="164" width="24" height="34" rx="6"/>
+                <rect x="572" y="164" width="24" height="34" rx="6"/>
+                <rect x="1022" y="164" width="24" height="34" rx="6"/>
               </g>
 
-              <!-- bore -->
-              <g class="flow__bore" fill="none" stroke="#03080a" stroke-width="17" stroke-linecap="round">
-                <path d="M-60 160 H360 C420 160 430 215 430 270 H470"/>
-                <path d="M-60 480 H360 C420 480 430 425 430 370 H470"/>
-                <path d="M670 260 H740 C800 260 800 100 860 100 H890"/>
-                <path d="M670 295 H760 C820 295 820 240 880 240 H890"/>
-                <path d="M670 345 H760 C820 345 820 400 880 400 H890"/>
-                <path d="M670 380 H740 C800 380 800 540 860 540 H890"/>
-              </g>
-
-              <!-- the water column: the dashed strokes are the body, the canvas
-                   above adds discrete droplets riding the same paths -->
-              <g class="flow__water" fill="none" stroke-width="10" stroke-linecap="round" filter="url(#flowGlow)">
-                <path id="inA" class="flow__stream" data-bucket="inlet" d="M-60 160 H360 C420 160 430 215 430 270 H470"/>
-                <path id="inB" class="flow__stream" data-bucket="inlet" d="M-60 480 H360 C420 480 430 425 430 370 H470"/>
-                <path id="outBuyback"   class="flow__stream flow__stream--out" data-bucket="buyback"   d="M670 260 H740 C800 260 800 100 860 100 H890"/>
-                <path id="outDrip"      class="flow__stream flow__stream--out" data-bucket="drip"      d="M670 295 H760 C820 295 820 240 880 240 H890"/>
-                <path id="outLiquidity" class="flow__stream flow__stream--out" data-bucket="liquidity" d="M670 345 H760 C820 345 820 400 880 400 H890"/>
-                <path id="outTreasury"  class="flow__stream flow__stream--out" data-bucket="treasury"  d="M670 380 H740 C800 380 800 540 860 540 H890"/>
-              </g>
-
-              <!-- couplings -->
-              <g class="flow__couplings">
-                <g transform="translate(196 142)"><rect width="26" height="36" rx="6" fill="url(#pipeSkin)"/><rect y="6" width="26" height="3" fill="#ffe9cc" opacity=".35"/></g>
-                <g transform="translate(196 462)"><rect width="26" height="36" rx="6" fill="url(#pipeSkin)"/><rect y="6" width="26" height="3" fill="#ffe9cc" opacity=".35"/></g>
-                <g transform="translate(772 82)"><rect width="26" height="36" rx="6" fill="url(#pipeSkin)"/><rect y="6" width="26" height="3" fill="#ffe9cc" opacity=".35"/></g>
-                <g transform="translate(772 222)"><rect width="26" height="36" rx="6" fill="url(#pipeSkin)"/><rect y="6" width="26" height="3" fill="#ffe9cc" opacity=".35"/></g>
-                <g transform="translate(772 382)"><rect width="26" height="36" rx="6" fill="url(#pipeSkin)"/><rect y="6" width="26" height="3" fill="#ffe9cc" opacity=".35"/></g>
-                <g transform="translate(772 522)"><rect width="26" height="36" rx="6" fill="url(#pipeSkin)"/><rect y="6" width="26" height="3" fill="#ffe9cc" opacity=".35"/></g>
-              </g>
-
-              <!-- inlet gauges -->
               <g class="flow__label">
-                <text x="70" y="104" class="flow__title">Pons creator fees</text>
-                <text x="70" y="126" class="flow__sub">every trade routed through the launch</text>
-                <text x="70" y="424" class="flow__title">LP trading fees</text>
-                <text x="70" y="446" class="flow__sub">the pool&#39;s own cut, swept each epoch</text>
+                <text x="-30" y="132" class="flow__title">Creator rewards</text>
+                <text x="-30" y="152" class="flow__sub">paid by Pons on every trade, in ETH</text>
               </g>
 
-              <!-- the manifold -->
-              <g class="flow__manifold" id="manifoldNode">
-                <rect x="462" y="200" width="216" height="240" rx="28" fill="url(#manifoldSkin)"
-                      stroke="rgba(0,224,122,.3)" stroke-width="2"/>
-                <rect x="474" y="212" width="192" height="216" rx="20" fill="none" stroke="#1d2b29" stroke-width="1.5"/>
-                <g class="flow__manifoldBolts" fill="url(#pipeSkin)">
-                  <circle cx="486" cy="224" r="6"/><circle cx="654" cy="224" r="6"/>
-                  <circle cx="486" cy="416" r="6"/><circle cx="654" cy="416" r="6"/>
-                </g>
-                <circle cx="570" cy="282" r="34" fill="none" stroke="var(--water)" stroke-width="2" opacity=".5" class="flow__pulse"/>
-                <circle cx="570" cy="282" r="22" fill="none" stroke="var(--water)" stroke-width="1.4" opacity=".3" class="flow__pulse flow__pulse--b"/>
-                <path d="M556 268 h28 v12 a14 14 0 0 1-14 14 14 14 0 0 1-14-14z" fill="var(--water)" opacity=".95"/>
-                <text x="570" y="352" class="flow__manifoldTitle" text-anchor="middle">THE FAUCET</text>
-                <text x="570" y="376" class="flow__sub" text-anchor="middle">collect &#8594; route &#8594; prove</text>
-                <text x="570" y="404" class="flow__manifoldSum" text-anchor="middle" id="manifoldSum">100.00% ROUTED</text>
+              <g class="flow__node" transform="translate(250 100)">
+                <rect width="220" height="160" rx="14" fill="url(#nodeSkin)" stroke="rgba(255,255,255,.12)"/>
+                <text x="110" y="52" class="flow__nodeTitle" text-anchor="middle">DEV WALLET</text>
+                <text x="110" y="78" class="flow__sub" text-anchor="middle">balance − gas reserve</text>
+                <text x="110" y="118" class="flow__pct" text-anchor="middle" id="flowSpendPct">100%</text>
+                <text x="110" y="140" class="flow__sub" text-anchor="middle">to the swap</text>
               </g>
 
-              <!-- outlets -->
-              <g class="flow__outlets">
-                <g class="flow__outlet" data-bucket="buyback">
-                  <g class="flow__wheel" style="transform-origin:912px 100px"><use href="#valveWheel" x="890" y="78" width="44" height="44"/></g>
-                  <text x="948" y="88"  class="flow__title">Buyback &amp; Burn</text>
-                  <text x="948" y="116" class="flow__pct" data-bind="policy.buyback.pct">35.00%</text>
-                  <text x="948" y="138" class="flow__sub">bought on market, sent to the burn address</text>
-                </g>
-                <g class="flow__outlet" data-bucket="drip">
-                  <g class="flow__wheel" style="transform-origin:912px 240px"><use href="#valveWheel" x="890" y="218" width="44" height="44"/></g>
-                  <text x="948" y="228" class="flow__title">Holder Drip</text>
-                  <text x="948" y="256" class="flow__pct" data-bind="policy.drip.pct">35.00%</text>
-                  <text x="948" y="278" class="flow__sub">split by time-weighted balance, claimable</text>
-                </g>
-                <g class="flow__outlet" data-bucket="liquidity">
-                  <g class="flow__wheel" style="transform-origin:912px 400px"><use href="#valveWheel" x="890" y="378" width="44" height="44"/></g>
-                  <text x="948" y="388" class="flow__title">Liquidity Deepening</text>
-                  <text x="948" y="416" class="flow__pct" data-bind="policy.liquidity.pct">20.00%</text>
-                  <text x="948" y="438" class="flow__sub">protocol-owned, never withdrawn</text>
-                </g>
-                <g class="flow__outlet" data-bucket="treasury">
-                  <g class="flow__wheel" style="transform-origin:912px 540px"><use href="#valveWheel" x="890" y="518" width="44" height="44"/></g>
-                  <text x="948" y="528" class="flow__title">Build Fund</text>
-                  <text x="948" y="556" class="flow__pct" data-bind="policy.treasury.pct">10.00%</text>
-                  <text x="948" y="578" class="flow__sub">tooling, audits, integrations &mdash; published</text>
-                </g>
+              <g class="flow__node" transform="translate(700 100)">
+                <rect width="220" height="160" rx="14" fill="url(#nodeSkin)" stroke="rgba(255,255,255,.12)"/>
+                <text x="110" y="52" class="flow__nodeTitle" text-anchor="middle">DEX SWAP</text>
+                <text x="110" y="78" class="flow__sub" text-anchor="middle">ETH → ROBIN, one router call</text>
+                <text x="110" y="118" class="flow__pct" text-anchor="middle" id="flowSlippage">≤ 3.00%</text>
+                <text x="110" y="140" class="flow__sub" text-anchor="middle">slippage bound, or it reverts</text>
               </g>
 
-              <!-- reusable outlet valve wheel -->
-              <symbol id="valveWheel" viewBox="0 0 44 44">
-                <circle cx="22" cy="22" r="15" fill="none" stroke="url(#pipeSkin)" stroke-width="4"/>
-                <path d="M22 6v32M6 22h32" stroke="url(#pipeSkin)" stroke-width="3.5" stroke-linecap="round"/>
-                <circle cx="22" cy="22" r="5" fill="url(#pipeSkin)"/>
-              </symbol>
+              <g class="flow__node flow__node--burn" transform="translate(1150 100)">
+                <rect width="210" height="160" rx="14" fill="url(#nodeSkin)" stroke="rgba(240,133,95,.45)"/>
+                <text x="105" y="52" class="flow__nodeTitle" text-anchor="middle">BURN</text>
+                <text x="105" y="78" class="flow__sub" text-anchor="middle">swap recipient</text>
+                <text x="105" y="112" class="flow__addr" text-anchor="middle">0x000…dEaD</text>
+                <text x="105" y="140" class="flow__sub" text-anchor="middle">nothing leaves this address</text>
+              </g>
+
+              <text x="-30" y="322" class="flow__sub">Conservation check after every cycle: balance before − spent − gas = balance after, to the wei.</text>
             </svg>
-            <canvas class="flow__particles" id="flowParticles" aria-hidden="true"></canvas>
           </div>
         </div>
       </div>
 
       <aside class="loop__panel">
-        <div class="panel__head">
-          <span class="panel__led" aria-hidden="true"></span>
-          <h3 class="panel__title">Try an amount</h3>
-        </div>
+        <div class="panel__head"><h3 class="panel__title">Try a reward</h3></div>
         <p class="panel__text">
-          This runs the engine's own allocation routine, in BigInt, with largest-remainder rounding.
-          The four outlets always sum to the input exactly.
+          What one cycle does with a given wallet balance, using the engine's limits and the rate
+          from the most recent burn.
         </p>
-
         <label class="slider" for="throughput">
-          <span class="slider__label">Collected this epoch</span>
-          <span class="slider__value"><span id="throughputValue">12.40</span> <em>SOL</em></span>
-          <input type="range" id="throughput" min="0.05" max="120" step="0.05" value="12.4" />
-          <span class="slider__scale" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="slider__label">Dev wallet balance</span>
+          <span class="slider__value"><span id="throughputValue">0.050</span> <em data-bind="native.symbol">ETH</em></span>
+          <input type="range" id="throughput" min="0.001" max="0.5" step="0.001" value="0.05" />
         </label>
-
         <ul class="loop__outputs" id="loopOutputs">
-          <li data-bucket="buyback"><span class="dot"></span><span class="k">Buyback &amp; burn</span><span class="v">4.3400</span><span class="bar" style="--w:35%"></span></li>
-          <li data-bucket="drip"><span class="dot"></span><span class="k">Holder drip</span><span class="v">4.3400</span><span class="bar" style="--w:35%"></span></li>
-          <li data-bucket="liquidity"><span class="dot"></span><span class="k">Liquidity</span><span class="v">2.4800</span><span class="bar" style="--w:20%"></span></li>
-          <li data-bucket="treasury"><span class="dot"></span><span class="k">Build fund</span><span class="v">1.2400</span><span class="bar" style="--w:10%"></span></li>
+          <li><span class="k">Gas reserve kept</span><span class="v" id="calcReserve">—</span></li>
+          <li><span class="k">Sent to swap</span><span class="v" id="calcSpend">—</span></li>
+          <li><span class="k">Expected tokens</span><span class="v" id="calcOut">—</span></li>
+          <li><span class="k">Minimum accepted</span><span class="v" id="calcMin">—</span></li>
         </ul>
-
-        <p class="loop__checksum" id="loopChecksum">
-          <span class="loop__checksumOk" aria-hidden="true"></span>
-          <strong>12.4000</strong> in, <strong>12.4000</strong> out.
-        </p>
+        <p class="loop__checksum" id="loopChecksum"></p>
       </aside>
     </div>
   </div>
 </section>
 
-<div class="joint joint--right" data-joint aria-hidden="true"><svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
-    <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
-    <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
-    <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
-    <rect class="joint__water" x="35" y="0" width="10" height="200"/>
-    <rect class="joint__flange" x="14" y="0" width="52" height="14" rx="4"/>
-    <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
-    <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
-    <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg></div>
-
-<!-- ═══════════════════════════════════ SPLIT ═══════════════════════════════ -->
-
-<section class="section" id="split">
+<section class="section" id="policy">
   <div class="shell">
-    <header class="section__head" data-num="02">
-      <p class="section__kicker"><span class="pipe-tick"></span>The split</p>
-      <h2 class="section__title">Fixed in one file, <em class="ink">read by both.</em></h2>
+    <header class="section__head">
+      <p class="section__kicker"><span class="pipe-tick"></span>Policy</p>
+      <h2 class="section__title">One rule, <em class="ink">fixed in code.</em></h2>
       <p class="section__lede">
-        The policy is a list of four rules in <code>engine/src/config.ts</code>. The engine
-        imports it to settle; this page reads a generated copy of it. Changing the split is a
-        commit that changes both at once, and the engine refuses to start if the rules do not sum to
-        10,000 basis points.
+        The routing policy is a single entry in <code>engine/src/config.ts</code>. The engine imports
+        it to settle and refuses to start if it does not sum to 10,000 basis points; this page reads
+        a generated copy. Changing it is a commit that changes both at once.
       </p>
     </header>
 
-    <div class="console" id="console">
-      <div class="console__rail" aria-hidden="true">
-        <span class="screw screw--tl"></span><span class="screw screw--tr"></span>
-        <span class="screw screw--bl"></span><span class="screw screw--br"></span>
+    <div class="policy">
+      <div class="policy__rule">
+        <div class="policy__pct" data-bind="policy.buyback.pct">100.00%</div>
+        <div>
+          <h3 data-bind="policy.buyback.label">Buyback &amp; burn</h3>
+          <p data-bind="policy.buyback.intent">Every creator reward the dev wallet receives is swapped for the token on the DEX, with the swap output sent directly to the burn address.</p>
+          <p class="policy__meta">Recipient <code data-bind="burnAddress">0x000000000000000000000000000000000000dEaD</code> &middot; policy sha256 <code id="policyHash">…</code></p>
+        </div>
       </div>
-      <div class="console__strip" aria-hidden="true">
-        <span class="console__plate">ROUTING POLICY</span>
-        <span class="console__leds"><i></i><i></i><i></i><i></i></span>
-        <span class="console__serial">sha256 <span id="policyHash">computing&hellip;</span></span>
-      </div>
 
-      <div class="dials" id="dials">
-        <article class="dial-card" data-bucket="buyback">
-          <div class="dial" data-value="35" data-max="50" data-accent="burn">
-            <svg viewBox="0 0 220 168" aria-hidden="true">
-              <circle class="dial__face" cx="110" cy="110" r="94"/>
-              <circle class="dial__bezel" cx="110" cy="110" r="94"/>
-              <g class="dial__ticks"></g>
-              <path class="dial__track" d="M32 128 A82 82 0 0 1 188 128" fill="none"/>
-              <path class="dial__redline" d="M181 92 A82 82 0 0 1 188 128" fill="none"/>
-              <path class="dial__arc" d="M32 128 A82 82 0 0 1 188 128" fill="none"/>
-              <g class="dial__needle">
-                <path d="M110 128 L110 44" />
-                <path class="dial__tail" d="M110 128 L110 142" />
-              </g>
-              <circle class="dial__hub" cx="110" cy="128" r="11"/>
-              <circle class="dial__pin" cx="110" cy="128" r="4"/>
-              <text class="dial__unit" x="110" y="104" text-anchor="middle">% OF FEES</text>
-            </svg>
-            <span class="dial__readout" data-bind="policy.buyback.pct">35.00%</span>
-          </div>
-          <h3>Buyback &amp; burn</h3>
-          <p>Fees are spent buying <span data-bind="project.tickerTag">$ROBIN</span> on the open market, and every token bought goes to the burn address. Sell pressure funds its own opposite.</p>
-          <ul class="dial-card__facts">
-            <li><span>Destination</span><strong>Burn address</strong></li>
-            <li><span>Reversible</span><strong>No</strong></li>
-          </ul>
-        </article>
-
-        <article class="dial-card" data-bucket="drip">
-          <div class="dial" data-value="35" data-max="50" data-accent="drip">
-            <svg viewBox="0 0 220 168" aria-hidden="true">
-              <circle class="dial__face" cx="110" cy="110" r="94"/>
-              <circle class="dial__bezel" cx="110" cy="110" r="94"/>
-              <g class="dial__ticks"></g>
-              <path class="dial__track" d="M32 128 A82 82 0 0 1 188 128" fill="none"/>
-              <path class="dial__redline" d="M181 92 A82 82 0 0 1 188 128" fill="none"/>
-              <path class="dial__arc" d="M32 128 A82 82 0 0 1 188 128" fill="none"/>
-              <g class="dial__needle">
-                <path d="M110 128 L110 44" />
-                <path class="dial__tail" d="M110 128 L110 142" />
-              </g>
-              <circle class="dial__hub" cx="110" cy="128" r="11"/>
-              <circle class="dial__pin" cx="110" cy="128" r="4"/>
-              <text class="dial__unit" x="110" y="104" text-anchor="middle">% OF FEES</text>
-            </svg>
-            <span class="dial__readout" data-bind="policy.drip.pct">35.00%</span>
-          </div>
-          <h3>Holder drip</h3>
-          <p>Split across eligible holders by <strong>time-weighted</strong> balance, not by a snapshot. Buying one slot before the cut-off earns you almost nothing; holding the whole epoch earns you all of it.</p>
-          <ul class="dial-card__facts">
-            <li><span>Weighting</span><strong>Time-weighted</strong></li>
-            <li><span>Claim</span><strong>Merkle proof</strong></li>
-          </ul>
-        </article>
-
-        <article class="dial-card" data-bucket="liquidity">
-          <div class="dial" data-value="20" data-max="50" data-accent="liquidity">
-            <svg viewBox="0 0 220 168" aria-hidden="true">
-              <circle class="dial__face" cx="110" cy="110" r="94"/>
-              <circle class="dial__bezel" cx="110" cy="110" r="94"/>
-              <g class="dial__ticks"></g>
-              <path class="dial__track" d="M32 128 A82 82 0 0 1 188 128" fill="none"/>
-              <path class="dial__redline" d="M181 92 A82 82 0 0 1 188 128" fill="none"/>
-              <path class="dial__arc" d="M32 128 A82 82 0 0 1 188 128" fill="none"/>
-              <g class="dial__needle">
-                <path d="M110 128 L110 44" />
-                <path class="dial__tail" d="M110 128 L110 142" />
-              </g>
-              <circle class="dial__hub" cx="110" cy="128" r="11"/>
-              <circle class="dial__pin" cx="110" cy="128" r="4"/>
-              <text class="dial__unit" x="110" y="104" text-anchor="middle">% OF FEES</text>
-            </svg>
-            <span class="dial__readout" data-bind="policy.liquidity.pct">20.00%</span>
-          </div>
-          <h3>Liquidity</h3>
-          <p>Paired and added to the pool as protocol-owned liquidity. The LP tokens are not held by a person, so there is no wallet that can pull them. Depth only ratchets up.</p>
-          <ul class="dial-card__facts">
-            <li><span>Owner</span><strong>Protocol</strong></li>
-            <li><span>Withdrawable</span><strong>No</strong></li>
-          </ul>
-        </article>
-
-        <article class="dial-card" data-bucket="treasury">
-          <div class="dial" data-value="10" data-max="50" data-accent="build">
-            <svg viewBox="0 0 220 168" aria-hidden="true">
-              <circle class="dial__face" cx="110" cy="110" r="94"/>
-              <circle class="dial__bezel" cx="110" cy="110" r="94"/>
-              <g class="dial__ticks"></g>
-              <path class="dial__track" d="M32 128 A82 82 0 0 1 188 128" fill="none"/>
-              <path class="dial__redline" d="M181 92 A82 82 0 0 1 188 128" fill="none"/>
-              <path class="dial__arc" d="M32 128 A82 82 0 0 1 188 128" fill="none"/>
-              <g class="dial__needle">
-                <path d="M110 128 L110 44" />
-                <path class="dial__tail" d="M110 128 L110 142" />
-              </g>
-              <circle class="dial__hub" cx="110" cy="128" r="11"/>
-              <circle class="dial__pin" cx="110" cy="128" r="4"/>
-              <text class="dial__unit" x="110" y="104" text-anchor="middle">% OF FEES</text>
-            </svg>
-            <span class="dial__readout" data-bind="policy.treasury.pct">10.00%</span>
-          </div>
-          <h3>Build fund</h3>
-          <p>The only bucket that pays for work: RPC, indexing, audits, integrations. It is an on-chain account, and every spend is listed in that epoch's receipt with what it bought.</p>
-          <ul class="dial-card__facts">
-            <li><span>Custody</span><strong>On-chain treasury</strong></li>
-            <li><span>Spends</span><strong>Published per epoch</strong></li>
-          </ul>
-        </article>
-      </div>
-    </div>
-
-    <div class="constants">
-      <h3 class="constants__title">Parameters</h3>
-      <p class="constants__note">Everything below is a literal in the config, not a knob on a dashboard.</p>
       <dl class="constants__grid">
-        <div><dt>Epoch length</dt><dd>54,000 slots <span>&asymp; 6 h at 2.5 slots/s</span></dd></div>
-        <div><dt>Settle floor</dt><dd>0.01 SOL <span>below this the epoch carries forward</span></dd></div>
-        <div><dt>Holder floor</dt><dd>1 ROBIN <span>time-weighted; smaller balances are not counted</span></dd></div>
-        <div><dt>Weighting</dt><dd>balance &times; slots held <span>integrated over the epoch, not a snapshot</span></dd></div>
-        <div><dt>Rounding</dt><dd>largest remainder <span>sum of outlets equals input exactly</span></dd></div>
-        <div><dt>Dust</dt><dd>carried to next epoch <span>never burned by rounding, never retained</span></dd></div>
-        <div><dt>Leaf hash</dt><dd>sha256(0x00 &#8214; u32 idx &#8214; owner &#8214; u64 amt) <span>domain-separated from nodes (0x01)</span></dd></div>
-        <div><dt>Odd nodes</dt><dd>promoted <span>never paired with themselves</span></dd></div>
-        <div><dt>Runtime deps</dt><dd>0 <span>engine is TypeScript over fetch and node:crypto</span></dd></div>
+        <div><dt>Gas reserve</dt><dd><span data-bind="limits.gasReserve">0.002</span> <span data-bind="native.symbol">ETH</span><small>kept in the wallet so the next cycle can always pay for gas</small></dd></div>
+        <div><dt>Minimum buyback</dt><dd><span data-bind="limits.minBuyback">0.005</span> <span data-bind="native.symbol">ETH</span><small>below this nothing is bought; a tiny swap is mostly gas</small></dd></div>
+        <div><dt>Slippage bound</dt><dd><span data-bind="limits.slippagePct">3.00%</span><small>minOut = quote × (1 − bound); the router reverts below it</small></dd></div>
+        <div><dt>Deadline</dt><dd><span data-bind="limits.deadline">180</span> s<small>a signed swap that is not mined in time is void</small></dd></div>
+        <div><dt>Router call</dt><dd>swapExactETHForTokens<small>SupportingFeeOnTransferTokens; recipient is the burn address</small></dd></div>
+        <div><dt>Conservation</dt><dd>to the wei<small>before − spent − gas must equal after, or the cycle is not recorded</small></dd></div>
       </dl>
     </div>
   </div>
 </section>
 
-<div class="joint" data-joint aria-hidden="true"><svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
-    <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
-    <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
-    <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
-    <rect class="joint__water" x="35" y="0" width="10" height="200"/>
-    <rect class="joint__flange" x="14" y="0" width="52" height="14" rx="4"/>
-    <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
-    <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
-    <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg></div>
-
-<!-- ═══════════════════════════════════ VERIFY ══════════════════════════════ -->
-
-<section class="section" id="verify">
+<section class="section" id="burns">
   <div class="shell">
-    <header class="section__head" data-num="03">
-      <p class="section__kicker"><span class="pipe-tick"></span>Verify</p>
-      <h2 class="section__title">Check a drip <em class="ink">without asking us.</em></h2>
-      <p class="section__lede">
-        Pick an epoch and paste a wallet. The page fetches that epoch's published claim file,
-        rebuilds the Merkle tree in your browser with WebCrypto, derives the proof for that wallet,
-        and compares the root it computed with the root the engine published. The browser
-        implementation is tested against the engine's on every build.
-      </p>
-    </header>
-
-    <div class="verify">
-      <form class="verify__form" id="verifyForm" autocomplete="off">
-        <div class="verify__row">
-          <label class="field">
-            <span class="field__label">Epoch</span>
-            <select class="field__input" id="verifyEpoch" name="epoch"></select>
-          </label>
-          <label class="field field--grow">
-            <span class="field__label">Wallet</span>
-            <input class="field__input" id="verifyOwner" name="owner" type="text" spellcheck="false"
-                   placeholder="paste an address, or pick a sample below" />
-          </label>
-          <button class="btn btn--primary verify__go" type="submit">Verify</button>
-        </div>
-        <p class="verify__samples" id="verifySamples"></p>
-      </form>
-
-      <div class="verify__result" id="verifyResult" aria-live="polite">
-        <div class="verify__empty" id="verifyEmpty">
-          <p>No lookup yet. The claim set for the selected epoch loads on demand, and nothing you type leaves this page.</p>
-        </div>
-        <div class="verify__panel" id="verifyPanel" hidden>
-          <div class="verify__status" id="verifyStatus"></div>
-          <dl class="verify__facts">
-            <div><dt>Owner</dt><dd id="vOwner" class="mono"></dd></div>
-            <div><dt>Claim index</dt><dd id="vIndex" class="mono"></dd></div>
-            <div><dt>Amount</dt><dd id="vAmount" class="mono"></dd></div>
-            <div><dt>Published root</dt><dd id="vRootPub" class="mono hash"></dd></div>
-            <div><dt>Recomputed root</dt><dd id="vRootMine" class="mono hash"></dd></div>
-            <div><dt>Leaves in tree</dt><dd id="vLeaves" class="mono"></dd></div>
-          </dl>
-          <div class="verify__proof">
-            <h4>Proof <span id="vProofCount"></span></h4>
-            <ol class="verify__hashes" id="vProof"></ol>
-          </div>
-          <p class="verify__cli">Same check from the CLI: <code id="vCli">faucet verify data/claims/epoch-N.json &lt;owner&gt;</code></p>
-        </div>
-      </div>
-    </div>
-
-    <div class="verify__aside">
-      <figure class="tree" id="tree">
-        <figcaption class="tree__cap">
-          <span class="tree__capTitle">How a proof works</span>
-          <span class="tree__capNote">eight-leaf illustration &middot; leaf <b id="treeLeaf">5</b> to root with <b id="treeSibs">3</b> siblings</span>
-        </figcaption>
-        <svg viewBox="0 0 560 260" role="img" aria-label="A Merkle tree with eight leaves; the path from one leaf to the root is highlighted along with the sibling hashes that make up the proof.">
-          <g class="tree__edges" id="treeEdges" stroke-linecap="round"></g>
-          <g class="tree__nodes" id="treeNodes"></g>
-        </svg>
-      </figure>
-
-      <div class="notes-grid">
-        <article class="note">
-          <h4>Why domain-separated leaves</h4>
-          <p>Leaf hashes carry a 0x00 prefix and internal nodes 0x01. Without it a 64-byte leaf can be replayed as an internal node and a proof forged for a claim that was never allocated.</p>
-        </article>
-        <article class="note">
-          <h4>Why odd nodes are promoted</h4>
-          <p>Pairing the last node with itself lets one proof validate two indices. Promoting it instead removes the double-claim.</p>
-        </article>
-        <article class="note">
-          <h4>Why the index is in the leaf</h4>
-          <p>A claim contract can mark index <em>n</em> as spent in a bitmap and be certain no second leaf shares it.</p>
-        </article>
-        <article class="note">
-          <h4>Why time-weighted</h4>
-          <p>Borrowing a balance across a snapshot block costs one slot. Integrating balance over the epoch makes it cost the whole epoch.</p>
-        </article>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="joint joint--right" data-joint aria-hidden="true"><svg class="joint__svg" viewBox="0 0 80 200" preserveAspectRatio="none">
-    <rect class="joint__casing" x="22" y="0" width="36" height="200" rx="5"/>
-    <rect class="joint__hi" x="28" y="0" width="5" height="200"/>
-    <rect class="joint__bore" x="34" y="0" width="12" height="200"/>
-    <rect class="joint__water" x="35" y="0" width="10" height="200"/>
-    <rect class="joint__flange" x="14" y="0" width="52" height="14" rx="4"/>
-    <rect class="joint__flange" x="14" y="186" width="52" height="14" rx="4"/>
-    <rect class="joint__coupling" x="12" y="84" width="56" height="32" rx="7"/>
-    <rect class="joint__couplingHi" x="12" y="90" width="56" height="3"/>
-  </svg></div>
-
-<!-- ═══════════════════════════════════ LEDGER ══════════════════════════════ -->
-
-<section class="section" id="ledger">
-  <div class="shell">
-    <header class="section__head section__head--compact" data-num="04">
-      <p class="section__kicker"><span class="pipe-tick"></span>Ledger</p>
-      <h2 class="section__title">Settlements</h2>
-      <p class="section__lede">
-        One row per settled epoch, newest first. Open a row for the slot window, the per-source
-        breakdown, and the claim file.
-      </p>
+    <header class="section__head section__head--compact">
+      <p class="section__kicker"><span class="pipe-tick"></span>Burn log</p>
+      <h2 class="section__title">Every cycle, on the record</h2>
+      <p class="section__lede">One row per burn, newest first. Open a row for the quote, the bound, the balances and the block.</p>
     </header>
 
     <div class="ledger">
       <div class="ledger__head" aria-hidden="true">
-        <span class="ledger__headTitle">SETTLEMENT LOG</span>
+        <span class="ledger__headTitle">BURN LEDGER</span>
         <span class="ledger__headMeta" id="ledgerMeta"></span>
-        <span class="ledger__headDots"><i></i><i></i><i></i></span>
       </div>
       <div class="ledger__scroll">
         <table class="ledger__table">
-          <caption class="visually-hidden">Settled epochs with collected fees, per-bucket allocation, drip recipients and Merkle root</caption>
+          <caption class="visually-hidden">Burn cycles with ETH spent, tokens burned, realised slippage, gas and transaction</caption>
           <thead>
             <tr>
-              <th scope="col">Epoch</th>
-              <th scope="col">Collected</th>
-              <th scope="col">Split</th>
-              <th scope="col">Burned</th>
-              <th scope="col">Dripped</th>
-              <th scope="col">Liquidity</th>
-              <th scope="col">Build</th>
-              <th scope="col">Wallets</th>
-              <th scope="col">Merkle root</th>
+              <th scope="col">#</th><th scope="col">When</th><th scope="col">Spent</th><th scope="col">Burned</th>
+              <th scope="col">vs quote</th><th scope="col">Gas</th><th scope="col">Transaction</th>
               <th scope="col"><span class="visually-hidden">Details</span></th>
             </tr>
           </thead>
-          <tbody id="ledgerBody">
-            <tr class="ledger__empty"><td colspan="10">Loading epochs&hellip;</td></tr>
-          </tbody>
+          <tbody id="ledgerBody"><tr class="ledger__empty"><td colspan="8">Loading&hellip;</td></tr></tbody>
         </table>
       </div>
       <p class="ledger__foot" id="ledgerFoot"></p>
@@ -888,69 +501,99 @@
   </div>
 </section>
 
-<!-- ═══════════════════════════════════ NOTES ═══════════════════════════════ -->
+<section class="section" id="verify">
+  <div class="shell">
+    <header class="section__head">
+      <p class="section__kicker"><span class="pipe-tick"></span>Verify</p>
+      <h2 class="section__title">Check a burn <em class="ink">on the chain, not here.</em></h2>
+      <p class="section__lede">
+        A burn is a normal transaction. On the explorer, the token's <code>Transfer</code> event in
+        that transaction has the burn address as its recipient, and the transaction's value is the
+        ETH spent. Paste a hash to look it up in the ledger and get the explorer link; or check it
+        with the CLI, which reads the receipt from the chain.
+      </p>
+    </header>
+
+    <div class="verify">
+      <form class="verify__form" id="verifyForm" autocomplete="off">
+        <div class="verify__row">
+          <label class="field field--grow">
+            <span class="field__label">Transaction hash</span>
+            <input class="field__input" id="verifyHash" name="hash" type="text" spellcheck="false" placeholder="0x…" />
+          </label>
+          <button class="btn btn--primary verify__go" type="submit">Look up</button>
+        </div>
+        <p class="verify__samples" id="verifySamples"></p>
+      </form>
+      <div class="verify__result" id="verifyResult" aria-live="polite">
+        <div class="verify__empty" id="verifyEmpty"><p>No lookup yet. Nothing you paste leaves this page.</p></div>
+        <div class="verify__panel" id="verifyPanel" hidden>
+          <div class="verify__status" id="verifyStatus"></div>
+          <dl class="verify__facts" id="verifyFacts"></dl>
+          <p class="verify__cli">From the CLI, against the chain: <code id="vCli">faucet verify &lt;txhash&gt;</code></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes-grid notes-grid--row">
+      <article class="note"><h4>Why the swap delivers to the burn address</h4><p>If tokens landed in the dev wallet first, there would be a moment where they could go somewhere else. Setting the router's recipient to 0x…dEaD removes that moment. The buy and the burn are one atomic transaction.</p></article>
+      <article class="note"><h4>Why a slippage bound</h4><p>A swap with no minimum output is an invitation to be sandwiched. The engine quotes first, sets minOut at the quote less 3%, and the router reverts rather than fill below it. A revert costs gas and nothing else.</p></article>
+      <article class="note"><h4>Why a gas reserve</h4><p>Spending the wallet to zero would strand the next cycle. A fixed reserve stays behind, and the conservation check confirms gas came out of it, not out of the buyback.</p></article>
+    </div>
+  </div>
+</section>
 
 <section class="section section--notes" id="notes">
   <div class="shell">
-    <header class="section__head section__head--compact" data-num="05">
+    <header class="section__head section__head--compact">
       <p class="section__kicker"><span class="pipe-tick"></span>Notes</p>
       <h2 class="section__title">Things worth knowing <em class="ink">before you buy.</em></h2>
     </header>
-
     <div class="notes">
       <div class="notes__col">
-        <h3>What "all fees" means</h3>
-        <p>Every basis point of collected fees goes to one of four destinations the project or its holders own: the burn address, the holder drip, protocol-owned liquidity, and an on-chain build fund. There is no team bucket. Validator fees paid to make those transfers come out of the build fund.</p>
-
-        <h3>What stops the split changing quietly</h3>
-        <p>Today, a commit. The split is one file, this page renders the same file, and a change shows up in both places and in git history at once. That is honest, but it is still a commit. Moving the policy on-chain so a change costs a visible transaction is the last item on the status list below.</p>
-
+        <h3>What "all creator rewards" means</h3>
+        <p>Everything Pons pays the dev wallet, above a fixed gas reserve, is spent on the token and burned. There is no team allocation from rewards and no second recipient. Gas for the swap comes out of the reserve, which is itself refilled by the next reward.</p>
         <h3>What is actually live</h3>
-        <p>The engine is real, tested, and runs end to end. The token has not launched, so the epochs on this page come from deterministic mock fee sources, and the ledger says so. When the mint and fee vault addresses go into the config, the same code runs against real vaults and this page renders real epochs.</p>
+        <p>The engine is real and tested. The token has not launched, so the burns on this page come from an in-memory mock chain with deterministic rewards, and the ledger says so. Once the token, router and dev wallet addresses are configured, the same code runs against Robinhood Chain and the ledger fills with real transaction hashes.</p>
+        <h3>Who holds the key</h3>
+        <p>The dev wallet's key is needed only to sign the swap. The engine reads it from the environment at run time, never from a file in the repository, and checks the signer matches the configured wallet before it will send.</p>
       </div>
       <div class="notes__col">
-        <h3>Quiet epochs</h3>
-        <p>If an epoch collects less than 0.01 SOL, nothing settles. Spending 0.005 SOL in transaction fees to move 0.002 SOL is a net loss, so the amount carries forward and the next epoch collects it. The receipt records it as carried, not spent.</p>
-
-        <h3>Claiming</h3>
-        <p>You claim; the engine does not push. Pushing to thousands of accounts costs more than most drips are worth and fails on accounts that cannot receive. A Merkle claim puts the cost on whoever wants the money, and unclaimed drips stay claimable.</p>
-
+        <h3>Quiet cycles</h3>
+        <p>If the spendable balance is under the minimum, nothing is bought and the rewards wait for the next cycle. Spending most of a small reward on gas would be a worse outcome than waiting.</p>
+        <h3>When a swap reverts</h3>
+        <p>If the pool moves more than the bound between quote and fill, the router reverts. The ETH stays in the wallet, gas is spent, and the engine reports it rather than retrying blind. The next cycle quotes again.</p>
         <h3>Risk</h3>
-        <p>This is an experimental token with no promise of value, liquidity, or return, and a real chance of going to zero. None of the mechanics on this page change that. Nothing here is financial advice. Read the code before you touch it.</p>
+        <p>This is an experimental token with no promise of value, liquidity, or return, and a real chance of going to zero. A buyback does not change that. Nothing here is financial advice. Read the code before you touch it.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════════════════════ STATUS ══════════════════════════════ -->
-
 <section class="section section--status" id="status">
   <div class="shell">
-    <header class="section__head section__head--compact" data-num="06">
+    <header class="section__head section__head--compact">
       <p class="section__kicker"><span class="pipe-tick"></span>Status</p>
       <h2 class="section__title">Where the project is</h2>
     </header>
-
     <div class="status">
       <table class="status__table">
         <tbody>
-          <tr><th scope="row">Engine</th><td>v<span data-bind="build.version">0.1.0</span> &middot; <span data-bind="build.tests">42</span> tests passing &middot; zero runtime dependencies</td><td><span class="pill pill--ok">ok</span></td></tr>
-          <tr><th scope="row">Fee sources</th><td>Deterministic mock adapters (pre-launch)</td><td><span class="pill pill--warn">synthetic</span></td></tr>
-          <tr><th scope="row">Mint</th><td><span data-bind="mint.address">not yet minted</span></td><td><span class="pill">unset</span></td></tr>
-          <tr><th scope="row">Fee vaults</th><td>creator vault, LP fee vault</td><td><span class="pill">unset</span></td></tr>
-          <tr><th scope="row">Settlement signing</th><td>Not wired to a key by design; <code>cycle</code> emits intents</td><td><span class="pill">manual</span></td></tr>
+          <tr><th scope="row">Engine</th><td>v<span data-bind="build.version">0.1.0</span> &middot; <span data-bind="build.tests">17</span> tests passing &middot; one runtime dependency (ethers)</td><td><span class="pill pill--ok">ok</span></td></tr>
+          <tr><th scope="row">Chain</th><td><span data-bind="project.chain">Robinhood Chain</span> &middot; chain id <span data-bind="chain.chainId">unset</span></td><td><span class="pill" id="pillChain">unset</span></td></tr>
+          <tr><th scope="row">Token</th><td><span data-bind="token.address">not yet deployed</span></td><td><span class="pill" id="pillToken">unset</span></td></tr>
+          <tr><th scope="row">Dev wallet</th><td><span data-bind="devWallet">to be provided</span></td><td><span class="pill" id="pillWallet">unset</span></td></tr>
+          <tr><th scope="row">Burns</th><td><span data-bind="totals.burns">0</span> cycles &middot; <span data-bind="modeLabel">mock chain</span></td><td><span class="pill" id="pillMode">synthetic</span></td></tr>
           <tr><th scope="row">Site</th><td>Static, built from <code data-bind="build.short">0000000</code> on <span data-bind="build.branch">main</span>, <span data-bind="build.date">today</span></td><td><span class="pill pill--ok">live</span></td></tr>
         </tbody>
       </table>
-
       <ol class="status__next">
-        <li class="is-done"><span>Engine: collect, route, distribute, prove; conservation asserts; test suite</span></li>
-        <li class="is-done"><span>Multi-epoch dry runs with carry-forward</span></li>
-        <li class="is-done"><span>In-browser verifier, cross-tested against the engine</span></li>
-        <li class="is-live"><span>Launch on Pons; set mint and vault addresses; first live cycle after <code>faucet doctor</code> is clean</span></li>
-        <li><span>Claim front-end with wallet connect, using the verifier above</span></li>
-        <li><span>Streamed balance index so weighting covers every wallet, not the top 20 accounts</span></li>
-        <li><span>Routing policy on-chain, so changing it costs a transaction, not a commit</span></li>
+        <li class="is-done"><span>Engine: plan, execute, conserve; mock chain; test suite</span></li>
+        <li class="is-done"><span>Swap output delivered to the burn address in one transaction</span></li>
+        <li class="is-live"><span>Set Robinhood Chain RPC, chain id, router and WETH from the launch docs</span></li>
+        <li><span>Deploy the token on Pons; set the token and dev wallet addresses</span></li>
+        <li><span><code>faucet doctor</code> clean, then the first live cycle</span></li>
+        <li><span>Schedule cycles (cron or a Vercel cron hitting a small runner) once rewards flow</span></li>
       </ol>
     </div>
   </div>
@@ -962,26 +605,17 @@
   <div class="shell footer__inner">
     <div class="footer__brand">
       <strong data-bind="project.name">Robinhood</strong>
-      <span data-bind="project.tagline">Every fee drips back to the people it came from.</span>
+      <span data-bind="project.tagline">Every creator reward buys the coin back and burns it.</span>
     </div>
     <nav class="footer__links" aria-label="Footer">
-      <a href="/docs">Docs</a>
-      <a href="/changelog">Changelog</a>
-      <a href="data/faucet.json">faucet.json</a>
-      <a href="data/claims/index.json">claim files</a>
-      <a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener">GitHub</a>
+      <a href="/docs">Docs</a><a href="/changelog">Changelog</a><a href="data/faucet.json">faucet.json</a><a href="data/burns.json">burns.json</a><a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener">GitHub</a>
     </nav>
-    <p class="footer__legal">
-      Experimental software and an experimental token. No promise of value, liquidity, or return.
-      Not financial advice.
-    </p>
+    <p class="footer__legal">Experimental software and an experimental token. No promise of value, liquidity, or return. Not financial advice.</p>
     <p class="footer__build mono" id="footerBuild"></p>
   </div>
 </footer>
 
-<script src="scripts/grain.js"></script>
 <script src="scripts/data.js"></script>
-<script src="scripts/merkle.js"></script>
 <script src="scripts/motion.js"></script>
 <script src="scripts/water.js"></script>
 <script src="scripts/flow.js"></script>

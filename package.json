@@ -1,8 +1,8 @@
 {
   "name": "faucet",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Faucet — the fee-recycling engine and site for Robinhood on Pons. Every fee drips back into the project.",
+  "description": "Faucet — buyback-and-burn engine and site for Robinhood on Pons (Robinhood Chain). Every creator reward buys the coin back and burns it.",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -11,15 +11,20 @@
     "build": "tsc -p tsconfig.json",
     "test": "tsc -p tsconfig.json && node --test dist/test/*.test.js",
     "faucet": "node dist/src/cli.js",
+    "policy": "node dist/src/cli.js policy",
+    "plan": "node dist/src/cli.js plan",
+    "doctor": "node dist/src/cli.js doctor",
+    "status": "node dist/src/cli.js status",
     "serve": "node scripts/serve.mjs",
     "sync:fallback": "node scripts/sync-fallback.mjs",
-    "cycle": "node dist/src/cli.js cycle --epochs 6 --seed 42 --write-site && npm run sync:fallback && npm run build:info",
-    "doctor": "node dist/src/cli.js doctor",
-    "policy": "node dist/src/cli.js policy",
-    "build:info": "node scripts/build-info.mjs"
+    "build:info": "node scripts/build-info.mjs",
+    "cycle": "node dist/src/cli.js burn --mock --execute --rounds 6 --seed 42 --write-site && npm run sync:fallback && npm run build:info"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
-    "@types/node": "^22.7.0"
+    "@types/node": "^22.7.0",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "ethers": "^6.17.0"
   }
 }

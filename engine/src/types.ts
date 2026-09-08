@@ -1,12 +1,12 @@
 /**
- * Core domain types for the Faucet fee-recycling engine.
+ * Core domain types for the Faucet buyback engine.
  *
- * Everything that represents an on-chain amount is a `bigint` of the token's
- * smallest unit (lamports for SOL, raw units for an SPL token). Floats never
- * touch a balance — they only show up in reports, after formatting.
+ * Every on-chain amount is a `bigint` of the asset's smallest unit (wei for
+ * ETH, raw units for the token). Floats never touch a balance; they only show
+ * up in reports, after formatting.
  */
 
-/** A raw on-chain amount, in the smallest unit of its mint. */
+/** A raw on-chain amount, in the smallest unit of its asset. */
 export type Raw = bigint;
 
 /** Basis points. 10_000 bps = 100%. */
@@ -14,133 +14,84 @@ export type Bps = number;
 
 export const BPS_DENOMINATOR = 10_000 as const;
 
-/** An address, in whatever encoding the chain adapter uses (base58 for Solana). */
-export type Address = string;
+/** A 0x-prefixed, 20-byte EVM address. */
+export type Address = `0x${string}`;
 
-/** Where a fee came from. Each one maps to a `FeeSource` adapter. */
-export type FeeSourceKind =
-  | 'pons-launch-fee'
-  | 'pons-creator-fee'
-  | 'lp-trading-fee'
-  | 'transfer-hook-fee'
-  | 'manual-donation';
+/** The universal burn address. Nothing can ever be moved out of it. */
+export const BURN_ADDRESS: Address = '0x000000000000000000000000000000000000dEaD';
 
-/** One bucket the fees can be routed into. */
-export type BucketId =
-  | 'buyback'
-  | 'drip'
-  | 'liquidity'
-  | 'treasury'
-  | 'ops';
+/** The one bucket. Everything the dev wallet earns goes here. */
+export type BucketId = 'buyback';
 
-export interface Mint {
-  /** Mint address. `null` means the chain's native asset (SOL). */
+export interface Asset {
   readonly address: Address | null;
   readonly symbol: string;
   readonly decimals: number;
 }
 
-/** A half-open window `[fromSlot, toSlot)` that an epoch covers. */
-export interface SlotWindow {
-  readonly fromSlot: number;
-  readonly toSlot: number;
-}
-
-/** A single fee receipt observed by a source adapter. */
-export interface FeeReceipt {
-  readonly source: FeeSourceKind;
-  readonly signature: string;
-  readonly slot: number;
-  readonly blockTime: number | null;
-  readonly amount: Raw;
-  readonly mint: Mint;
-}
-
-/** What a source adapter returns for one collection pass. */
-export interface CollectionResult {
-  readonly source: FeeSourceKind;
-  readonly window: SlotWindow;
-  readonly receipts: readonly FeeReceipt[];
-  readonly total: Raw;
-}
-
-/**
- * A fee source. Adapters are deliberately dumb: they observe, they never move
- * funds. Routing and settlement live downstream so a bad adapter can't spend.
- */
-export interface FeeSource {
-  readonly kind: FeeSourceKind;
-  readonly label: string;
-  collect(window: SlotWindow): Promise<CollectionResult>;
-}
-
-/** One routing rule: send `bps` of everything collected to `bucket`. */
 export interface RouteRule {
   readonly bucket: BucketId;
   readonly bps: Bps;
   readonly label: string;
-  /** Human-readable statement of what this bucket does with the money. */
   readonly intent: string;
-  /**
-   * Destination for the funds. `null` means the bucket is consumed in-protocol
-   * (buyback burns, drip is claimed via Merkle) rather than paid to an address.
-   */
-  readonly destination: Address | null;
 }
 
 export interface RoutingPolicy {
   readonly rules: readonly RouteRule[];
 }
 
-/** The result of applying a `RoutingPolicy` to a collected total. */
 export interface Allocation {
   readonly bucket: BucketId;
   readonly bps: Bps;
   readonly amount: Raw;
-  readonly destination: Address | null;
 }
 
-/** A holder and the weight that decides their share of the drip bucket. */
-export interface HolderWeight {
-  readonly owner: Address;
-  /** Time-weighted balance across the epoch, raw units. */
-  readonly weight: Raw;
+/** What the engine intends to do, before anything is signed. */
+export interface BuybackPlan {
+  readonly wallet: Address;
+  readonly balance: Raw;
+  readonly gasReserve: Raw;
+  readonly spend: Raw;
+  readonly expectedOut: Raw;
+  readonly minOut: Raw;
+  readonly slippageBps: Bps;
+  readonly path: readonly Address[];
+  readonly to: Address;
+  readonly deadline: number;
+  readonly quotedAtBlock: number;
 }
 
-/** One holder's claimable amount for one epoch. */
-export interface Claim {
-  readonly index: number;
-  readonly owner: Address;
-  readonly amount: Raw;
-}
+/** Why a cycle did not settle. */
+export type SkipReason =
+  | { readonly kind: 'below-floor'; readonly spendable: Raw; readonly floor: Raw }
+  | { readonly kind: 'unconfigured'; readonly missing: readonly string[] };
 
-export interface MerkleDistribution {
-  readonly root: string;
-  readonly claims: readonly Claim[];
-  readonly total: Raw;
-  /** Dust left over after integer division, rolled into the next epoch. */
-  readonly remainder: Raw;
-}
-
-/** Everything the engine decided for one epoch. Serialised as the audit trail. */
-export interface Epoch {
+/** The record of one settled buyback-and-burn, as persisted and published. */
+export interface BurnReceipt {
   readonly id: number;
-  readonly window: SlotWindow;
-  readonly openedAt: string;
-  readonly closedAt: string;
-  readonly collected: Raw;
-  readonly collections: readonly CollectionResult[];
-  readonly allocations: readonly Allocation[];
-  readonly distribution: MerkleDistribution;
-  readonly carryIn: Raw;
-  readonly carryOut: Raw;
+  readonly txHash: string;
+  readonly block: number;
+  readonly timestamp: string;
+  readonly wallet: Address;
+  readonly ethSpent: Raw;
+  readonly tokensBurned: Raw;
+  readonly expectedOut: Raw;
+  readonly minOut: Raw;
+  readonly gasUsed: Raw;
+  readonly gasCost: Raw;
+  readonly balanceBefore: Raw;
+  readonly balanceAfter: Raw;
+  readonly mode: 'live' | 'mock';
 }
 
-/** A settlement instruction the executor will turn into a transaction. */
-export interface SettlementIntent {
-  readonly bucket: BucketId;
-  readonly action: 'buyback-and-burn' | 'add-liquidity' | 'transfer' | 'fund-merkle';
-  readonly amount: Raw;
-  readonly destination: Address | null;
-  readonly memo: string;
+/** What the chain reports back for a sent swap. */
+export interface SwapReceipt {
+  readonly txHash: string;
+  readonly status: 'success' | 'reverted';
+  readonly block: number;
+  readonly timestamp: number;
+  readonly gasUsed: Raw;
+  readonly effectiveGasPrice: Raw;
+  /** Sum of ERC-20 Transfer(to = burn address) amounts for the token in this tx. */
+  readonly tokensToBurn: Raw;
 }

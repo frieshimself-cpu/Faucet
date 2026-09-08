@@ -3,22 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Docs — Robinhood Faucet</title>
-<meta name="description" content="How the Faucet engine collects fees, routes them, distributes the holder drip and proves it. Configuration, CLI, going live, deployment." />
+<title>Docs — Robinhood buyback and burn</title>
+<meta name="description" content="How the buyback-and-burn engine plans a swap, delivers it to the burn address, and accounts for every wei. Configuration, CLI, going live, deployment." />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
 <link rel="stylesheet" href="/styles/base.css" />
 <link rel="stylesheet" href="/styles/components.css" />
 <link rel="stylesheet" href="/styles/page.css" />
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<div class="grain" aria-hidden="true"></div>
 
 <header class="nav is-stuck">
-  <div class="nav__rail" aria-hidden="true"></div>
   <div class="shell nav__inner">
     <a class="brand" href="/" aria-label="Robinhood home">
       <span class="brand__mark" aria-hidden="true"><img src="/favicon.svg" alt="" width="38" height="38" /></span>
@@ -26,13 +24,13 @@
     </a>
     <nav class="nav__links" aria-label="Primary">
       <a href="/#mechanism"><span>Mechanism</span></a>
+      <a href="/#burns"><span>Burn log</span></a>
       <a href="/#verify"><span>Verify</span></a>
-      <a href="/#ledger"><span>Ledger</span></a>
       <a href="/docs" class="is-active"><span>Docs</span></a>
       <a href="/changelog"><span>Changelog</span></a>
       <a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener"><span>GitHub</span></a>
     </nav>
-    <a class="btn btn--ghost btn--sm" href="/#verify">Verify a drip</a>
+    <a class="btn btn--ghost btn--sm" href="/#burns">Burn log</a>
   </div>
 </header>
 
@@ -42,9 +40,8 @@
       <span class="toc__title">Docs</span>
       <a href="#overview">Overview</a>
       <a href="#cycle">The cycle</a>
-      <a href="#routing">Routing</a>
-      <a href="#drip">The drip</a>
-      <a href="#merkle">Merkle claims</a>
+      <a href="#swap">The swap</a>
+      <a href="#conservation">Conservation</a>
       <a href="#config">Configuration</a>
       <a href="#cli">CLI</a>
       <a href="#live">Going live</a>
@@ -55,123 +52,104 @@
     </nav>
 
     <article class="prose">
-      <h1 id="overview">The Faucet</h1>
-      <p class="lede">A fee-recycling engine for Robinhood on Pons. It collects the fees a launch throws off, routes every basis point of them back into the project by a fixed policy, and publishes enough for anyone to check that it did.</p>
-      <p>Two things live in the repository. <code>engine/</code> is the engine: TypeScript, zero runtime dependencies, a test suite that tries to make it leak. <code>site/</code> is this website: a static directory with no build step, rendering the files the engine writes.</p>
-      <p>The claim the site makes is enforced by code. <code>assertPolicyBalanced()</code> throws unless the routing policy allocates exactly 10,000 basis points, and it runs on import, so a leaky policy means nothing starts. <code>assertConserved()</code> throws unless every lamport collected in an epoch either left in a settlement intent or was explicitly carried into the next one.</p>
+      <h1 id="overview">Buyback and burn</h1>
+      <p class="lede">An engine for Robinhood on Pons, on Robinhood Chain. It takes the creator rewards Pons pays the dev wallet, spends every basis point of them buying the token on the DEX, and has the swap deliver the tokens straight to the burn address.</p>
+      <p>Two things live in the repository. <code>engine/</code> is the engine: TypeScript, one runtime dependency (ethers, for signing), and a test suite that runs it against an in-memory chain. <code>site/</code> is this website: a static directory with no build step, rendering the ledger the engine writes.</p>
+      <p>Two invariants are enforced in code rather than promised in copy. <code>assertPolicyBalanced()</code> throws unless the routing policy allocates exactly 10,000 basis points, and it runs on import. After every swap the engine checks the wallet moved by exactly the amount sent plus the gas paid, and refuses to record the cycle otherwise.</p>
 
       <h2 id="cycle">The cycle</h2>
-      <pre><code>Pons creator vault ─┐
-                    ├─→ collect ─→ route ─→ distribute ─→ settle
-LP fee vault ───────┘      │         │          │           │
-                           │         │          │           └─ intents (unsigned)
-                           │         │          └─ Merkle root + claim file
-                           │         └─ four buckets, exactly 100%
-                           └─ finalized credits inside [fromSlot, toSlot)</code></pre>
-      <p>An epoch is a half-open slot window. The default is 54,000 slots, about six hours at Solana's 2.5 slots per second. Each stage is a separate module, and the boundaries between them are where the safety properties live.</p>
-      <h3>Sources observe, never move</h3>
-      <p>A fee source reports what it saw. It holds no key and has no way to move money. An adapter bug can produce a wrong <em>number</em>, which the conservation checks downstream will surface, but it can never produce a wrong <em>transfer</em>.</p>
-      <p>The vault adapter reads each transaction's balance delta on the vault account rather than parsing program logs. When the launchpad ships a new program version, a fee that lands in the vault is still a fee, and the adapter keeps working.</p>
-      <h3>Quiet epochs carry forward</h3>
-      <p>If the collected total is under the settle floor (0.01 SOL), nothing settles. Spending 0.005 SOL in transaction fees to move 0.002 SOL is a net loss, so the whole amount carries forward, and the receipt records it as carried rather than spent. The next epoch picks it up as <code>carryIn</code>.</p>
+      <pre><code>Pons creator rewards (ETH) ─→ dev wallet
+                                  │
+                                  ├─ keep the gas reserve
+                                  └─ spend the rest ─→ router.swapExactETHForTokens(
+                                                         amountOutMin = quote × (1 − 3%),
+                                                         path = [WETH, ROBIN],
+                                                         to   = 0x000…dEaD )
+                                                       ─→ receipt: Transfer(ROBIN → 0x…dEaD)
+                                                       ─→ balance check, to the wei
+                                                       ─→ ledger entry</code></pre>
+      <p><strong>plan</strong> reads the wallet, subtracts the gas reserve, runs the remainder through the routing policy (one bucket, but the same code path a multi-bucket policy would use), quotes the router, and derives the minimum output. Nothing is signed. <strong>execute</strong> takes a plan and sends exactly that. A dry run and a live run compute the same plan; the only difference is whether execute is called.</p>
+      <h3>Quiet cycles</h3>
+      <p>If the spendable amount is under the minimum buyback (0.005 ETH by default), nothing is bought. Spending most of a small reward on gas would be worse than waiting, so the balance stays and the next cycle sees it.</p>
 
-      <h2 id="routing">Routing</h2>
-      <p>Integer division loses remainders. "We lose three lamports an epoch" is exactly the kind of quiet leak this project exists to not have, so allocation uses the largest-remainder method: floor every bucket, then hand the leftover units out one at a time to the buckets with the biggest fractional part.</p>
-      <p><code>sum(allocations) === total</code> is guaranteed and asserted. Ties break on the bucket's position in the config, so the same input produces the same allocation on any machine.</p>
-      <table>
-        <thead><tr><th>Bucket</th><th>Share</th><th>Destination</th></tr></thead>
-        <tbody>
-          <tr><td>Buyback &amp; burn</td><td>35.00%</td><td>Market-buys the token; everything bought goes to the burn address.</td></tr>
-          <tr><td>Holder drip</td><td>35.00%</td><td>Split by time-weighted balance; claimed with a Merkle proof.</td></tr>
-          <tr><td>Liquidity</td><td>20.00%</td><td>Added to the pool as protocol-owned liquidity. Not withdrawable.</td></tr>
-          <tr><td>Build fund</td><td>10.00%</td><td>On-chain treasury for tooling, audits, integrations. Spends published per epoch.</td></tr>
-        </tbody>
-      </table>
+      <h2 id="swap">The swap</h2>
+      <p>One call on a UniswapV2Router02-compatible router: <code>swapExactETHForTokensSupportingFeeOnTransferTokens(amountOutMin, [WETH, token], burnAddress, deadline)</code> with the ETH as the transaction value. The recipient is the burn address, so the tokens go from the pool to 0x…dEaD inside the same transaction and never sit in the dev wallet.</p>
+      <ul>
+        <li><strong>Slippage.</strong> The engine quotes <code>getAmountsOut</code> first and sets <code>amountOutMin</code> to the quote less the configured bound (3%). Below that the router reverts, which costs gas and nothing else. A swap with no minimum is an invitation to be sandwiched.</li>
+        <li><strong>Deadline.</strong> A signed swap not mined within 180 seconds is void.</li>
+        <li><strong>Fee-on-transfer safe.</strong> The <em>SupportingFeeOnTransferTokens</em> variant is used so a token that taxes transfers still settles correctly.</li>
+        <li><strong>Reading the burn.</strong> The engine parses the receipt's <code>Transfer</code> logs for the token and sums the amounts whose recipient is the burn address. That, not the quote, is what the ledger records as burned.</li>
+      </ul>
 
-      <h2 id="drip">The drip</h2>
-      <p>Share of the drip is proportional to <strong>balance integrated over the epoch</strong>, not the balance at a snapshot block:</p>
-      <pre><code>weight(owner) = Σ (balance_i × slots_held_i) / total_slots</code></pre>
-      <p>A snapshot is trivially gamed: borrow a large balance, hold it across the snapshot block, claim, repay. Integrating over the whole epoch makes that attack cost the full epoch rather than one slot.</p>
-      <p>Holders under the holder floor (1 ROBIN) are not counted, which stops sybil dust from farming the drip. Anything the drip cannot divide evenly is returned as <code>remainder</code> and rolled into the next epoch's collected total. It is never burned by rounding and never quietly retained.</p>
-
-      <h2 id="merkle">Merkle claims</h2>
-      <p>Claims are hashed into a Merkle tree and the root is published with the claim file. Three details separate a working claim tree from an exploitable one, and each has a test that fails without it.</p>
-      <ol>
-        <li><strong>Domain separation.</strong> Leaves hash with a <code>0x00</code> prefix, internal nodes with <code>0x01</code>. Without it a 64-byte "leaf" can be replayed as an internal node and a proof forged for a claim that was never allocated.</li>
-        <li><strong>No self-pairing.</strong> An odd node at a level is promoted, not paired with itself. Duplicating the last node lets one proof validate two different indices.</li>
-        <li><strong>Index inside the leaf.</strong> <code>leaf = sha256(0x00 ‖ u32be(index) ‖ owner ‖ u64be(amount))</code>. A claim contract can mark index <em>n</em> spent in a bitmap and be certain no second leaf shares it.</li>
-      </ol>
-      <p>Internal pairs are hashed in sorted order, so a proof is a flat list of sibling hashes with no left/right bitmap for a verifier to get wrong. The empty tree has a distinct sentinel root, <code>sha256("faucet:empty")</code>, which carries neither prefix and so cannot collide with a real hash.</p>
-      <div class="callout callout--water"><p>The site ships its own implementation of this tree in <code>scripts/merkle.js</code>, on WebCrypto, so a holder can rebuild an epoch and check their proof in the browser. The engine's test suite loads that file as-is and asserts identical roots and proofs against the TypeScript implementation, including on the published claim files.</p></div>
+      <h2 id="conservation">Conservation</h2>
+      <p>Before recording a cycle the engine checks, in wei:</p>
+      <pre><code>balance_before − eth_spent − gas_cost == balance_after
+tokens_burned ≥ amountOutMin
+gas_cost ≤ gas_reserve</code></pre>
+      <p>If any of those fails, the cycle is not recorded and the error names the numbers. The ledger loader re-checks the first line on every receipt it reads, so a hand-edited ledger is rejected too.</p>
 
       <h2 id="config">Configuration</h2>
-      <p>Everything lives in <code>engine/src/config.ts</code>. The site reads a generated copy, so the numbers on the page and the numbers the engine settles with cannot drift apart.</p>
+      <p>Limits live in <code>engine/src/config.ts</code>; chain and contract addresses come from the environment, so no address is ever a literal in the code. The site reads a generated copy, so the numbers on the page cannot drift from what the engine settles with.</p>
       <table>
-        <thead><tr><th>Key</th><th>Default</th><th>Meaning</th></tr></thead>
+        <thead><tr><th>Setting</th><th>Default</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td><code>epoch.slots</code></td><td>54,000</td><td>Epoch length. About six hours.</td></tr>
-          <tr><td><code>epoch.minSettleRaw</code></td><td>10,000,000</td><td>Settle floor, in lamports (0.01 SOL). Below it, carry forward.</td></tr>
-          <tr><td><code>epoch.minHolderBalanceRaw</code></td><td>1,000,000</td><td>Holder floor, in raw token units (1 ROBIN at 6 decimals).</td></tr>
-          <tr><td><code>mint.address</code></td><td>null</td><td>Set at launch. Until then the engine runs against mock sources.</td></tr>
-          <tr><td><code>feeAccounts.*</code></td><td>null</td><td>The vaults the source adapters watch.</td></tr>
-          <tr><td><code>routing.rules</code></td><td>4 rules</td><td>Must sum to 10,000 bps or nothing starts.</td></tr>
-          <tr><td><code>excludedFromDrip</code></td><td>[]</td><td>Project-owned accounts that must never receive a drip.</td></tr>
+          <tr><td><code>FAUCET_RPC_URL</code></td><td>—</td><td>Robinhood Chain JSON-RPC endpoint.</td></tr>
+          <tr><td><code>FAUCET_CHAIN_ID</code></td><td>—</td><td>Pinned; the engine refuses an RPC that reports a different id.</td></tr>
+          <tr><td><code>FAUCET_TOKEN</code></td><td>—</td><td>The token contract.</td></tr>
+          <tr><td><code>FAUCET_ROUTER</code>, <code>FAUCET_WETH</code></td><td>—</td><td>Router the pool trades on, and its wrapped ETH.</td></tr>
+          <tr><td><code>FAUCET_DEV_WALLET</code></td><td>—</td><td>Where Pons pays creator rewards. Signs the buybacks.</td></tr>
+          <tr><td><code>FAUCET_DEV_WALLET_KEY</code></td><td>—</td><td>Private key. Needed only for <code>burn --execute</code>. Never committed.</td></tr>
+          <tr><td><code>limits.gasReserveWei</code></td><td>0.002 ETH</td><td>Left in the wallet every cycle.</td></tr>
+          <tr><td><code>limits.minBuybackWei</code></td><td>0.005 ETH</td><td>Below this, nothing is bought.</td></tr>
+          <tr><td><code>limits.slippageBps</code></td><td>300</td><td>Maximum drop from the quote before the swap reverts.</td></tr>
+          <tr><td><code>limits.deadlineSeconds</code></td><td>180</td><td>Validity of a signed swap.</td></tr>
         </tbody>
       </table>
 
       <h2 id="cli">CLI</h2>
-      <pre><code>faucet policy                          show the routing policy and prove it sums to 100%
-faucet cycle [--epochs N] [--seed N]   run epochs (mock sources unless --live)
-         [--live] [--write-site] [--out DIR]
-faucet verify &lt;claims.json&gt; &lt;owner&gt;    verify a published claim proof
-faucet doctor                          sanity-check config and RPC</code></pre>
-      <p>Verifying a drip needs nothing but the published claim file:</p>
-      <pre><code>$ npm run faucet -- verify site/data/claims/epoch-3.json Hood042xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-  proof valid
-  owner  Hood042xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  index  42
-  amount 0.0006 SOL
-  proof  7 node(s)
-  root   0x168163ee52ae9bf84eec35874632371dc0d0600fb5b4213b5dd6b42eb2500468</code></pre>
+      <pre><code>faucet policy                       show the routing policy and prove it sums to 100%
+faucet plan [--mock]                read the wallet and quote the buyback (no spend)
+faucet burn [--execute] [--mock]    run a cycle; --execute sends the swap
+            [--rounds N] [--write-site]
+faucet status                       totals from the burn ledger
+faucet verify &lt;txhash&gt;              confirm a tx burned the token
+faucet doctor                       check config, RPC and signer</code></pre>
+      <p><code>--mock</code> runs against an in-memory chain with deterministic rewards; it is what the test suite and the pre-launch site data use. <code>--execute</code> is the only flag that spends anything, and only with a signer that matches the configured dev wallet.</p>
 
       <h2 id="live">Going live</h2>
       <ol>
-        <li>Mint the token on Pons.</li>
-        <li>Fill in <code>CONFIG.mint.address</code> and <code>CONFIG.feeAccounts.*</code>.</li>
-        <li>Copy <code>.env.example</code> to <code>.env</code> and set <code>FAUCET_RPC_URL</code>. Public endpoints rate-limit a full epoch scan; use an authenticated provider.</li>
-        <li><code>npm run doctor</code>. Every check must pass. It fails on purpose until the addresses are set, because a live cycle against an unconfigured engine would silently collect nothing.</li>
-        <li><code>npm run build &amp;&amp; node dist/src/cli.js cycle --live --write-site &amp;&amp; npm run sync:fallback</code></li>
+        <li>Fill <code>.env</code> from <code>.env.example</code> with the Robinhood Chain RPC, chain id and explorer prefix, the router and WETH, the token, and the dev wallet.</li>
+        <li><code>npm run doctor</code>. Every check must pass: it verifies the RPC reports the pinned chain id, reads the wallet balance and the token supply, and gets a quote from the router.</li>
+        <li><code>npm run plan</code> to see what one cycle would do, with nothing sent.</li>
+        <li>Export <code>FAUCET_DEV_WALLET_KEY</code> in the shell that runs the cycle, never in a file, then <code>node dist/src/cli.js burn --execute --write-site</code>.</li>
+        <li>Commit and push the updated ledger; the site redeploys with the new burn.</li>
       </ol>
-      <div class="callout"><p>Settlement signing is deliberately not wired to a key. <code>cycle</code> computes and publishes settlement intents; broadcasting them is a separate, explicit step, so a bug in collection can never become a transfer.</p></div>
+      <div class="callout"><p>The engine will not send if the signer derived from the key is not the configured dev wallet, if the swap recipient is not the burn address, or if the plan does not account for the whole balance. Those checks run before the transaction is built.</p></div>
 
       <h2 id="runbook">Runbook</h2>
       <h3>Reading a receipt</h3>
-      <p><strong>collected</strong> is total in, including carry-in. <strong>routing</strong> lists the four buckets, which must sum to collected. <strong>drip</strong> gives recipient count, distributed amount, carry-out and the Merkle root. <strong>settlement</strong> lists the intents; nothing has been broadcast.</p>
-      <h3>Publishing a drip</h3>
-      <p>Publish the claim file where holders can fetch it (the site does this under <code>data/claims/</code>). Fund the claim account with the amount in the <code>fund-merkle</code> intent, which is <code>distribution.total</code>, not the whole drip bucket. The difference is dust that belongs to the next epoch.</p>
+      <p><strong>spent</strong> is the ETH sent as the swap value. <strong>burned</strong> is the token amount that reached the burn address, read from the receipt, with the quote and realised slippage beside it. <strong>wallet</strong> shows before and after, and <strong>conserved</strong> is the wei check.</p>
+      <h3>When a swap reverts</h3>
+      <pre><code>error swap 0x… reverted (slippage over 300 bps, or the deadline passed). Only gas was spent.</code></pre>
+      <p>The ETH is still in the wallet. Do not loosen the bound to force it through; run <code>plan</code> again and see whether the pool has settled. If reverts repeat at 3% the pool is too thin for the size, and the right fix is smaller, more frequent cycles.</p>
       <h3>When conservation fails</h3>
-      <pre><code>error epoch 4: routed 900 but collected 1000</code></pre>
-      <p>The engine caught a leak and refused to settle. Nothing was broadcast. Do not retry; capture the inputs and find the bug. <code>assertConserved</code> failing is always an engine defect, never a transient condition.</p>
-      <h3>Changing the split</h3>
-      <p>Edit <code>ROUTING</code> in the config. The basis points must still sum to 10,000 or the engine refuses to import it. Then <code>npm run cycle</code> to regenerate the site data so the page matches what will settle. The change is one commit that changes both.</p>
+      <p>The cycle is not recorded. Nothing further will be sent until the numbers are explained. A mismatch usually means something else moved ETH in the wallet between the plan and the receipt; the receipt's own numbers will show which.</p>
+      <h3>Scheduling</h3>
+      <p>Cycles are idempotent with respect to the wallet: a run that finds nothing above the floor does nothing. Any scheduler that can run <code>burn --execute</code> with the key in its environment will do; hourly is a sensible starting cadence once rewards flow.</p>
 
       <h2 id="site">The site</h2>
-      <p>Static files, no framework, no bundler. It reads <code>data/faucet.json</code>, written by <code>faucet cycle --write-site</code>; <code>data/claims/*.json</code>, the published claim files; and <code>data/build.json</code>, the commit and build time stamped by <code>npm run build:info</code>. The footer of every page shows that stamp, so a deployed page can always be traced to a commit.</p>
-      <p>Opened straight off disk, where <code>fetch</code> is blocked, the page falls back to the snapshot in <code>scripts/data.js</code>, which <code>npm run sync:fallback</code> regenerates, and says so.</p>
+      <p>Static files. It reads <code>data/faucet.json</code>, the ledger summary written by <code>burn --write-site</code>; <code>data/burns.json</code>, the full receipts; and <code>data/build.json</code>, the commit and build time stamped by <code>npm run build:info</code>. The footer of every page shows that stamp. Opened straight off disk it falls back to the snapshot in <code>scripts/data.js</code>, which <code>npm run sync:fallback</code> regenerates, and says so.</p>
 
       <h2 id="deploy">Deploying</h2>
-      <p>The repository is Vercel-ready. <code>vercel.json</code> serves <code>site/</code> and uses the build step as a guard: it typechecks the engine and runs <code>faucet policy</code>, which throws unless the split sums to 100%. A policy that leaks a basis point cannot be deployed. The headers include a Content-Security-Policy with no inline scripts, and <code>data/</code> is served uncached so a fresh cycle is visible on the next load.</p>
+      <p>The repository is Vercel-ready. <code>vercel.json</code> serves <code>site/</code> and uses the build step as a guard: it typechecks the engine and runs <code>faucet policy</code>, which throws unless the policy sums to 100%. Headers include a Content-Security-Policy with no inline scripts, and <code>data/</code> is served uncached so a fresh burn is visible on the next load.</p>
       <pre><code>npm i -g vercel
 vercel --prod</code></pre>
-      <p><code>npm run serve</code> applies the same headers locally, CSP included, and serves the 404 page for missing routes, so anything that would break in production breaks on <code>localhost:4173</code> first.</p>
 
       <h2 id="not-yet">Not built yet</h2>
       <ul>
-        <li><strong>Signing.</strong> Intents are computed and published; broadcasting is manual by design until the rest is proven.</li>
-        <li><strong>A full holder index.</strong> <code>--live</code> reads <code>getTokenLargestAccounts</code>, which caps at 20 accounts. That is a floor for testing; the plan is a streamed balance index feeding the time-weighting.</li>
-        <li><strong>On-chain policy.</strong> The split is a committed file today. Moving it on-chain makes changing it cost a visible transaction instead of a commit.</li>
-        <li><strong>A claim front-end.</strong> The verifier on the home page derives the proof; submitting it needs a wallet connection and the claim program.</li>
+        <li><strong>Chain constants.</strong> Robinhood Chain's RPC, chain id, router and WETH are read from the environment and left unset in the repository until confirmed against the launch documentation. Nothing is guessed.</li>
+        <li><strong>A scheduler.</strong> The engine runs one cycle per invocation. Wiring it to cron or a small runner is deliberately separate from the engine.</li>
+        <li><strong>Claiming rewards from Pons.</strong> If Pons requires an explicit claim rather than paying the wallet directly, a source step to call it belongs before <code>plan</code>. The engine treats whatever is in the wallet as spendable.</li>
       </ul>
     </article>
   </div>

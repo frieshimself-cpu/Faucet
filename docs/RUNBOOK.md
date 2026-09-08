@@ -3,96 +3,71 @@
 ## Before the first live cycle
 
 ```bash
-cp .env.example .env      # set FAUCET_RPC_URL
+cp .env.example .env      # fill every value from the launch docs
 npm install
 npm test                  # must be green
 npm run doctor            # every check must pass
+npm run plan              # what one cycle would do; nothing is sent
 ```
 
-`doctor` fails until `CONFIG.mint.address` and at least one entry in
-`CONFIG.feeAccounts` are set. That is intentional — a live cycle against an
-unconfigured engine would silently collect nothing and settle nothing.
+`doctor` fails until every chain and contract setting is present. It then
+checks the RPC reports the pinned chain id, reads the dev wallet balance and
+the token's total supply, and asks the router for a quote.
 
-## Running an epoch
+## Running a cycle
 
 ```bash
+export FAUCET_DEV_WALLET_KEY=...        # in the shell, never in a file
 npm run build
-node dist/src/cli.js cycle --live --write-site
-npm run sync:fallback
+node dist/src/cli.js burn --execute --write-site
+npm run sync:fallback && npm run build:info
+git commit -am "burn N" && git push     # the site redeploys with the burn
 ```
 
-Read the printed receipt before you act on it:
+Read the receipt before you move on:
 
-- **collected** — total in, including anything carried from the last epoch.
-- **routing** — the four buckets. These must sum to collected; the engine
-  refuses to print otherwise.
-- **drip** — recipient count, distributed amount, carry-out, Merkle root.
-- **settlement** — the intents. Nothing has been broadcast.
+- **spent** — ETH sent as the swap value.
+- **burned** — tokens that reached the burn address, from the receipt, with the
+  quote and realised slippage beside it.
+- **wallet** — balance before and after.
+- **conserved** — the wei check. It must say yes.
 
-## Publishing the new epoch to the site
-
-```bash
-npm run cycle        # or the --live variant above, then npm run sync:fallback
-git commit -am "epoch N settled"
-git push
-```
-
-Vercel redeploys on push. `data/faucet.json` is served with
-`max-age=0, must-revalidate`, so visitors see the new epoch on their next load
-rather than after a cache expires. The build step runs `faucet policy`; if the
-routing policy ever fails to sum to 100%, the deploy fails and the previous
-version stays up.
-
-## Publishing a drip
-
-1. Publish `out/claims/epoch-N.json` wherever holders can fetch it.
-2. Fund the claim account with the amount in the `fund-merkle` intent — that is
-   `distribution.total`, not the whole drip bucket. The difference is the dust
-   that could not be divided, and it belongs to the next epoch.
-3. Anyone can now check their own drip:
-   ```bash
-   node dist/src/cli.js verify out/claims/epoch-N.json <owner>
-   ```
-
-## When an epoch does not settle
+## When nothing is bought
 
 ```
-  NOT SETTLED  collected 4210000 is below the 10000000 settle floor; carried forward
+NOT SETTLED  spendable 0.0031 ETH is under the 0.005 ETH floor
 ```
 
-This is normal on a quiet epoch. Nothing was spent, `carryOut` holds the full
-amount, and the next cycle picks it up via `carryIn`. Do not lower
-`minSettleRaw` to force a settlement — the floor exists because the transaction
-fees would exceed the transfer.
+Normal on a quiet cycle. The balance waits for the next one.
+
+## When a swap reverts
+
+```
+error swap 0x… reverted (slippage over 300 bps, or the deadline passed). Only gas was spent.
+```
+
+The ETH is still in the wallet. Do not loosen the bound to force it through.
+Run `plan` again and see whether the pool has settled. If reverts repeat at 3%
+the pool is too thin for the size; run smaller, more frequent cycles.
 
 ## When conservation fails
 
 ```
-  error epoch 4: routed 900 but collected 1000
+error wallet balance after swap is …, expected …
 ```
 
-The engine caught a leak and refused to settle. Nothing was broadcast. Do not
-retry — capture the epoch's inputs and find the bug. `assertConserved` failing is
-always an engine defect, never a transient condition.
+The cycle is not recorded. Something else moved ETH in the wallet between the
+plan and the receipt. The receipt's numbers will show what; do not send again
+until it is explained.
 
-## Changing the split
+## Scheduling
 
-Edit `ROUTING` in `engine/src/config.ts`. The basis points must still sum to
-10,000 or `assertPolicyBalanced` throws on import and nothing runs at all.
+A cycle that finds nothing above the floor does nothing, so running on a timer
+is safe. Hourly is a sensible starting cadence once rewards flow. Whatever runs
+it must have `FAUCET_DEV_WALLET_KEY` in its environment and nowhere else.
 
-Then regenerate the site data so the page matches what will settle:
+## Changing the limits
 
-```bash
-npm run cycle
-```
-
-Changing the split is a visible commit that changes both the engine and the
-published page in the same diff. That is the current guarantee; the roadmap item
-is to move the policy on-chain so it costs a transaction instead.
-
-## Rotating the RPC endpoint
-
-`FAUCET_RPC_URL` only. The client retries 429s and 5xx with exponential backoff
-and gives up after five attempts rather than hammering a rate-limited endpoint.
-Public endpoints will rate-limit a full epoch scan; use an authenticated provider
-for live runs.
+Edit `limits` in `engine/src/config.ts`, then `npm run cycle` so the page
+matches. Changing the routing policy is the same file; the engine refuses to
+import a policy that does not sum to 10,000 bps.

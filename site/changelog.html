@@ -3,22 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Changelog — Robinhood Faucet</title>
+<title>Changelog — Robinhood buyback and burn</title>
 <meta name="description" content="What changed in the Faucet engine and site, by version and commit." />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" />
 <link rel="stylesheet" href="/styles/base.css" />
 <link rel="stylesheet" href="/styles/components.css" />
 <link rel="stylesheet" href="/styles/page.css" />
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<div class="grain" aria-hidden="true"></div>
 
 <header class="nav is-stuck">
-  <div class="nav__rail" aria-hidden="true"></div>
   <div class="shell nav__inner">
     <a class="brand" href="/" aria-label="Robinhood home">
       <span class="brand__mark" aria-hidden="true"><img src="/favicon.svg" alt="" width="38" height="38" /></span>
@@ -26,13 +24,13 @@
     </a>
     <nav class="nav__links" aria-label="Primary">
       <a href="/#mechanism"><span>Mechanism</span></a>
+      <a href="/#burns"><span>Burn log</span></a>
       <a href="/#verify"><span>Verify</span></a>
-      <a href="/#ledger"><span>Ledger</span></a>
       <a href="/docs"><span>Docs</span></a>
       <a href="/changelog" class="is-active"><span>Changelog</span></a>
       <a href="https://github.com/frieshimself-cpu/Faucet" rel="noopener"><span>GitHub</span></a>
     </nav>
-    <a class="btn btn--ghost btn--sm" href="/#verify">Verify a drip</a>
+    <a class="btn btn--ghost btn--sm" href="/#burns">Burn log</a>
   </div>
 </header>
 
@@ -40,29 +38,44 @@
   <div class="shell page__grid">
     <nav class="toc" aria-label="Versions">
       <span class="toc__title">Versions</span>
+      <a href="#v0-2-0">0.2.0</a>
       <a href="#v0-1-0">0.1.0</a>
     </nav>
 
     <article class="prose">
       <h1>Changelog</h1>
       <p class="lede">Every entry links to the commit it came from. Dates are commit dates, UTC. Versions follow <code>package.json</code>.</p>
-      <p>Pre-launch. The engine runs against deterministic mock fee sources until the mint and vault addresses are set; the site says so wherever it shows numbers.</p>
+      <p>Pre-launch. The engine runs against an in-memory chain until the Robinhood Chain constants, the token and the dev wallet are set; the site says so wherever it shows numbers.</p>
 
       <div class="log" id="log">
+        <section class="entry" id="v0-2-0">
+          <div class="entry__meta">
+            <span class="entry__version">0.2.0</span>
+            <span class="entry__date">2026-09-08</span>
+            <span class="entry__sha"><a href="https://github.com/frieshimself-cpu/Faucet/commits/claude/faucet-robinhood-website-21ck7m" rel="noopener">branch</a></span>
+          </div>
+          <div>
+            <h2>Retargeted to Robinhood Chain; 100% buyback and burn <span class="tag">engine</span><span class="tag">site</span></h2>
+            <ul>
+              <li><strong>Engine.</strong> Rewritten for an EVM chain. One policy rule: every creator reward above a gas reserve is swapped for the token with the router's recipient set to the burn address, so the buy and the burn are one transaction. Slippage bound from a fresh quote, deadline, fee-on-transfer-safe router call, burned amount read from the receipt's Transfer logs, and a wei-exact balance check before a cycle is recorded. In-memory mock chain for tests and pre-launch data. One runtime dependency, ethers, for signing.</li>
+              <li><strong>Removed.</strong> The Solana adapters, the four-way split, the holder drip and its Merkle claims. They described a different product.</li>
+              <li><strong>Site.</strong> Rebuilt around the burn ledger: mechanism diagram, a reward calculator using the engine's limits, the policy and its parameters, the burn log with per-cycle detail, a transaction lookup, status. Ornament removed; neutral palette; Inter.</li>
+              <li><strong>Config.</strong> Chain and contract addresses come from the environment and are left unset until confirmed against the launch documentation. <code>faucet doctor</code> pins the chain id and quotes the router before live is allowed.</li>
+            </ul>
+          </div>
+        </section>
+
         <section class="entry" id="v0-1-0">
           <div class="entry__meta">
             <span class="entry__version">0.1.0</span>
             <span class="entry__date">2026-09-07</span>
-            <span class="entry__sha"><a href="https://github.com/frieshimself-cpu/Faucet/commits/claude/faucet-robinhood-website-21ck7m" rel="noopener">5 commits</a></span>
+            <span class="entry__sha"><a href="https://github.com/frieshimself-cpu/Faucet/commit/4e2898e" rel="noopener">4e2898e</a></span>
           </div>
           <div>
-            <h2>First working build <span class="tag">engine</span><span class="tag">site</span></h2>
+            <h2>First build <span class="tag">engine</span><span class="tag">site</span></h2>
             <ul>
-              <li><strong>Engine.</strong> Collect, route, distribute, prove. Largest-remainder allocation so outlets sum to input exactly; time-weighted holder drip; Merkle claims with domain-separated leaves, promoted orphans and the index inside the leaf; conservation assertions that throw rather than settle. Zero runtime dependencies. Test suite of 42 cases, including one that loads the browser Merkle implementation and asserts it agrees with the engine byte for byte. <a href="https://github.com/frieshimself-cpu/Faucet/commit/4e2898e" rel="noopener">4e2898e</a></li>
-              <li><strong>CLI.</strong> <code>policy</code>, <code>cycle</code>, <code>verify</code>, <code>doctor</code>. <code>cycle --write-site</code> writes the site's data file and the per-epoch claim files. Settlement signing is intentionally not wired to a key.</li>
-              <li><strong>Site.</strong> Static, no framework. The fixture with a real water simulation; the routing diagram with droplets sampled off the pipe geometry; the dial console; the ledger with expandable epochs; the in-browser drip verifier; the parameters table; docs and this changelog. <a href="https://github.com/frieshimself-cpu/Faucet/commit/ccda773" rel="noopener">ccda773</a>, <a href="https://github.com/frieshimself-cpu/Faucet/commit/8059b56" rel="noopener">8059b56</a></li>
-              <li><strong>Deploy.</strong> Vercel config with the build step as a policy guard, a strict CSP with no inline scripts, uncached data files, and a local server that applies the same headers. <a href="https://github.com/frieshimself-cpu/Faucet/commit/602fbb8" rel="noopener">602fbb8</a></li>
-              <li><strong>Build stamp.</strong> Commit, branch, build time and test count written to <code>data/build.json</code> and shown in every footer.</li>
+              <li>Fee-recycling engine with a four-way split and a Merkle-claim holder drip, targeting Solana, with an in-browser verifier. Superseded by 0.2.0 once the chain and the policy were confirmed.</li>
+              <li>The fixture, the water simulation, the routing diagram, Vercel deployment with a strict CSP, and the build stamp. <a href="https://github.com/frieshimself-cpu/Faucet/commit/ccda773" rel="noopener">ccda773</a>, <a href="https://github.com/frieshimself-cpu/Faucet/commit/8059b56" rel="noopener">8059b56</a>, <a href="https://github.com/frieshimself-cpu/Faucet/commit/602fbb8" rel="noopener">602fbb8</a></li>
             </ul>
           </div>
         </section>

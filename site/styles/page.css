@@ -62,7 +62,7 @@
 
 .prose pre {
   padding: 1rem 1.2rem;
-  border: var(--plate-edge);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #04090a;
   box-shadow: var(--plate-shadow);
@@ -81,10 +81,10 @@
 
 .callout {
   padding: 1rem 1.2rem;
-  border: 1px solid rgba(184, 115, 51, 0.4);
-  border-left: 3px solid var(--copper);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--water);
   border-radius: 0 var(--radius) var(--radius) 0;
-  background: rgba(184, 115, 51, 0.07);
+  background: var(--water-wash);
 }
 
 .callout--water { border-color: rgba(0, 224, 122, 0.3); border-left-color: var(--water); background: var(--water-wash); }
@@ -107,7 +107,7 @@
 .entry__meta { display: grid; gap: 0.3rem; align-content: start; }
 .entry__version { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--water-bright); }
 .entry__date { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
-.entry__sha { font-family: var(--font-mono); font-size: 0.7rem; color: var(--copper-lit); }
+.entry__sha { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); }
 .entry__sha a { color: inherit; }
 .entry h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }
 .entry ul { padding-left: 1.2rem; }

@@ -52,7 +52,6 @@ export function allocate(total: Raw, policy: RoutingPolicy): Allocation[] {
     bucket: row.rule.bucket,
     bps: row.rule.bps,
     amount: row.floor + (bonus.get(row.rule.bucket) ?? 0n),
-    destination: row.rule.destination,
   }));
 
   const check = allocations.reduce((sum, a) => sum + a.amount, 0n);
