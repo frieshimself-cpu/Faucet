@@ -85,7 +85,7 @@ export const ROUTING: RoutingPolicy = {
 export const CONFIG: FaucetConfig = {
   project: {
     name: 'Robinhood',
-    ticker: 'ROBIN',
+    ticker: process.env['FAUCET_TOKEN_SYMBOL'] ?? 'ROBIN',
     tagline: 'Every creator reward buys the coin back and burns it.',
     launchpad: 'Pons',
     chain: ROBINHOOD_CHAIN.name,
