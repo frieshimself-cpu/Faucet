@@ -1,41 +1,5 @@
 {
-  "receipts": [
-    {
-      "id": 1,
-      "txHash": "0xbe044166402e2638cc54ed1328119f52377c28814c7b6163ef27a42af4a78bd2",
-      "block": 57899881,
-      "timestamp": "2026-09-08T18:20:40.000Z",
-      "wallet": "0xfb2e3601F80Fc03Ef851df0Ba49e6f65357C5654",
-      "venue": "pons-curve",
-      "ethSpent": "76356693138799139",
-      "tokensBurned": "19888297979828808730935038",
-      "expectedOut": "19888297979828808730935038",
-      "minOut": "19291649040433944469006986",
-      "gasUsed": "100423",
-      "gasCost": "23963538798000",
-      "balanceBefore": "323159674497455592",
-      "balanceAfter": "246779017819858453",
-      "untouched": "245802981358656453",
-      "claimTx": "0xb4a743cd972ecbdfca181baf87117bc7393969b9371ebdbacd96af18e0d75ea9",
-      "mode": "live"
-    }
-  ],
-  "claims": [
-    {
-      "txHash": "0xb4a743cd972ecbdfca181baf87117bc7393969b9371ebdbacd96af18e0d75ea9",
-      "block": 57899788,
-      "timestamp": "2026-09-08T18:20:31.000Z",
-      "wallet": "0xfb2e3601F80Fc03Ef851df0Ba49e6f65357C5654",
-      "amount": "77364399446655139",
-      "gasUsed": "32632",
-      "gasCost": "7706307856000",
-      "mode": "live"
-    }
-  ],
-  "baseline": {
-    "wallet": "0xfb2e3601F80Fc03Ef851df0Ba49e6f65357C5654",
-    "balance": "245802981358656453",
-    "block": 57897973,
-    "recordedAt": "2026-09-08T18:17:30.839Z"
-  }
+  "receipts": [],
+  "claims": [],
+  "baseline": null
 }

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-08T18:20:49.279Z",
-  "mode": "live",
+  "generatedAt": "2026-09-08T20:20:09.618Z",
+  "mode": "none",
   "project": {
     "name": "Robinhood",
     "ticker": "ROBIN",
@@ -14,7 +14,7 @@
     "explorerTx": "https://robinhoodchain.blockscout.com/tx/"
   },
   "token": {
-    "address": "0xd6e1d091f2029fe0122ddcc90936bdd255f5828b",
+    "address": null,
     "symbol": "ROBIN",
     "decimals": 18
   },
@@ -23,13 +23,13 @@
     "symbol": "ETH",
     "decimals": 18
   },
-  "devWallet": "0xfb2e3601F80Fc03Ef851df0Ba49e6f65357C5654",
+  "devWallet": null,
   "funds": {
-    "untouchedRaw": "245802981358656453",
-    "untouched": "0.245802",
-    "recordedAt": "2026-09-08T18:17:30.839Z",
-    "claimedPoolRaw": "976036461202000",
-    "claimedPool": "0.000976"
+    "untouchedRaw": null,
+    "untouched": null,
+    "recordedAt": null,
+    "claimedPoolRaw": "0",
+    "claimedPool": "0"
   },
   "burnAddress": "0x000000000000000000000000000000000000dEaD",
   "venues": {
@@ -56,52 +56,21 @@
     "intervalSeconds": 180
   },
   "totals": {
-    "burns": 1,
-    "claims": 1,
-    "claimedRaw": "77364399446655139",
-    "claimed": "0.0773",
-    "ethSpentRaw": "76356693138799139",
-    "ethSpent": "0.0763",
-    "tokensBurnedRaw": "19888297979828808730935038",
-    "tokensBurned": "19,888,297.97",
-    "gasRaw": "31669846654000",
-    "gas": "0.000031",
-    "supplyRaw": "1000000000000000000000000000",
-    "supplyBurnedPct": "1.9888%",
-    "lastBurnAt": "2026-09-08T18:20:40.000Z",
-    "lastClaimAt": "2026-09-08T18:20:31.000Z"
+    "burns": 0,
+    "claims": 0,
+    "claimedRaw": "0",
+    "claimed": "0",
+    "ethSpentRaw": "0",
+    "ethSpent": "0",
+    "tokensBurnedRaw": "0",
+    "tokensBurned": "0",
+    "gasRaw": "0",
+    "gas": "0",
+    "supplyRaw": null,
+    "supplyBurnedPct": null,
+    "lastBurnAt": null,
+    "lastClaimAt": null
   },
-  "burns": [
-    {
-      "id": 1,
-      "txHash": "0xbe044166402e2638cc54ed1328119f52377c28814c7b6163ef27a42af4a78bd2",
-      "block": 57899881,
-      "timestamp": "2026-09-08T18:20:40.000Z",
-      "mode": "live",
-      "venue": "pons-curve",
-      "ethSpentRaw": "76356693138799139",
-      "ethSpent": "0.0763",
-      "tokensBurnedRaw": "19888297979828808730935038",
-      "tokensBurned": "19,888,297.97",
-      "expectedOut": "19,888,297.97",
-      "minOut": "19,291,649.04",
-      "slippageRealisedBps": 0,
-      "gas": "0.000023",
-      "explorerUrl": "https://robinhoodchain.blockscout.com/tx/0xbe044166402e2638cc54ed1328119f52377c28814c7b6163ef27a42af4a78bd2",
-      "claimTx": "0xb4a743cd972ecbdfca181baf87117bc7393969b9371ebdbacd96af18e0d75ea9",
-      "claimUrl": "https://robinhoodchain.blockscout.com/tx/0xb4a743cd972ecbdfca181baf87117bc7393969b9371ebdbacd96af18e0d75ea9"
-    }
-  ],
-  "claims": [
-    {
-      "txHash": "0xb4a743cd972ecbdfca181baf87117bc7393969b9371ebdbacd96af18e0d75ea9",
-      "block": 57899788,
-      "timestamp": "2026-09-08T18:20:31.000Z",
-      "mode": "live",
-      "amountRaw": "77364399446655139",
-      "amount": "0.0773",
-      "gas": "0.000007",
-      "explorerUrl": "https://robinhoodchain.blockscout.com/tx/0xb4a743cd972ecbdfca181baf87117bc7393969b9371ebdbacd96af18e0d75ea9"
-    }
-  ]
+  "burns": [],
+  "claims": []
 }
