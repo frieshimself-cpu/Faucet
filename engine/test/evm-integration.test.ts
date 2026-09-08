@@ -20,10 +20,10 @@ import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import test, { after, before } from 'node:test';
 import { Contract, ContractFactory, JsonRpcProvider, NonceManager, Wallet, parseEther } from 'ethers';
-import { BuybackError, claimRewards, execute, plan } from '../src/buyback.js';
+import { BuybackError, claimRewards, ensureBaseline, execute, plan } from '../src/buyback.js';
 import { CONFIG } from '../src/config.js';
 import { EthersChain, SwapRejectedError } from '../src/evm.js';
-import { assertReceiptConserved } from '../src/ledger.js';
+import { assertReceiptConserved, claimedPool, emptyLedger } from '../src/ledger.js';
 import type { Address } from '../src/types.js';
 import { BURN_ADDRESS, NATIVE } from '../src/types.js';
 
@@ -133,7 +133,9 @@ function chainFor(key: string | undefined): EthersChain {
   });
 }
 
-const overrides = () => ({ wallet: dev.address as Address, token });
+/** One ledger for the whole file: the baseline is recorded once, before any claim. */
+const ledger = emptyLedger();
+const overrides = () => ({ wallet: dev.address as Address, token, ledger });
 
 test('EthersChain reads the node: chain id, supply, launch record, escrow, quote', async () => {
   const chain = chainFor(undefined);
@@ -153,9 +155,17 @@ test('EthersChain reads the node: chain id, supply, launch record, escrow, quote
   assert.ok(q > 0n, 'the curve must quote, even from an empty wallet');
 });
 
-test('an empty claim is refused before it is sent', async () => {
+test('the wallet is baselined before anything else: what is in it now is never spent', async () => {
   const chain = chainFor(DEV_KEY);
   await fund(parseEther('0.01'));
+  const baseline = await ensureBaseline({ config: CONFIG, chain, ...overrides() });
+  assert.equal(baseline?.balance, parseEther('0.01'));
+  const planned = await plan({ config: CONFIG, chain, ...overrides() });
+  assert.equal(planned.ok, false, 'nothing claimed yet, so nothing to spend');
+});
+
+test('an empty claim is refused before it is sent', async () => {
+  const chain = chainFor(DEV_KEY);
   const result = await claimRewards({ config: CONFIG, chain, ...overrides(), mode: 'live' });
   assert.equal(result.ok, false);
   if (result.ok) return;
@@ -175,6 +185,7 @@ test('a real cycle: claim pays the wallet exactly, the buy lands on the burn add
   assert.equal(claimed.receipt.amount, reward, 'what the escrow said is what arrived');
   assert.equal(await chain.balance(dev.address as Address), walletBefore + reward - claimed.receipt.gasCost, 'claim conserved to the wei');
   assert.equal(await chain.claimable(dev.address as Address), 0n);
+  ledger.claims.push(claimed.receipt);
 
   const burnBefore = await chain.tokenBalance(token, BURN_ADDRESS);
   const planned = await plan({ config: CONFIG, chain, ...overrides() });
@@ -182,10 +193,13 @@ test('a real cycle: claim pays the wallet exactly, the buy lands on the burn add
   if (!planned.ok) return;
   assert.equal(planned.plan.route.kind, 'pons-curve');
   assert.equal(planned.plan.to, BURN_ADDRESS);
-  assert.equal(planned.plan.spend + planned.plan.gasReserve, planned.plan.balance);
+  assert.equal(planned.plan.untouched, parseEther('0.01'));
+  assert.equal(planned.plan.spend + planned.plan.gasReserve, reward - claimed.receipt.gasCost, 'the whole claimed pool, and only that');
 
   const receipt = await execute({ config: CONFIG, chain, plan: planned.plan, id: 1, mode: 'live', token, claimTx: claimed.receipt.txHash });
   assertReceiptConserved(receipt);
+  ledger.receipts.push(receipt);
+  assert.ok(receipt.balanceAfter >= parseEther('0.01'), 'the 0.01 ETH that was already in the wallet is untouched');
 
   const burnAfter = await chain.tokenBalance(token, BURN_ADDRESS);
   assert.equal(burnAfter - burnBefore, receipt.tokensBurned, 'ledger must equal what the burn address actually received');
@@ -201,9 +215,22 @@ test('a real cycle: claim pays the wallet exactly, the buy lands on the burn add
   assert.match(receipt.txHash, /^0x[0-9a-f]{64}$/);
 });
 
+test('ETH sent to the wallet from elsewhere is not spent', async () => {
+  const chain = chainFor(DEV_KEY);
+  await fund(parseEther('0.05')); // a top-up, not a reward
+  const planned = await plan({ config: CONFIG, chain, ...overrides() });
+  assert.equal(planned.ok, false);
+  if (planned.ok) return;
+  assert.equal(planned.skip.kind, 'below-floor');
+  assert.ok(claimedPool(ledger) < CONFIG.limits.minBuybackWei + CONFIG.limits.gasReserveWei);
+});
+
 test('the slippage bound refuses the buy when the market moves against us; nothing is burned', async () => {
   const chain = chainFor(DEV_KEY);
-  await fund(parseEther('0.05'));
+  await accrue(parseEther('0.05'));
+  const claimed = await claimRewards({ config: CONFIG, chain, ...overrides(), mode: 'live' });
+  assert.equal(claimed.ok, true);
+  if (claimed.ok) ledger.claims.push(claimed.receipt);
 
   const planned = await plan({ config: CONFIG, chain, ...overrides() });
   assert.equal(planned.ok, true);

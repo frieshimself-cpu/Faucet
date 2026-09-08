@@ -7,7 +7,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import type { FaucetConfig } from './config.js';
-import type { Asset, BurnReceipt, ClaimReceipt, Raw } from './types.js';
+import type { Address, Asset, Baseline, BurnReceipt, ClaimReceipt, Raw } from './types.js';
 
 export const LEDGER_PATH = 'site/data/burns.json';
 export const SITE_DATA_PATH = 'site/data/faucet.json';
@@ -15,21 +15,42 @@ export const SITE_DATA_PATH = 'site/data/faucet.json';
 export const MOCK_LEDGER_PATH = '.faucet-mock/burns.json';
 export const MOCK_SITE_DATA_PATH = '.faucet-mock/faucet.json';
 
-type BigKeys = 'ethSpent' | 'tokensBurned' | 'expectedOut' | 'minOut' | 'gasUsed' | 'gasCost' | 'balanceBefore' | 'balanceAfter';
+type BigKeys = 'ethSpent' | 'tokensBurned' | 'expectedOut' | 'minOut' | 'gasUsed' | 'gasCost' | 'balanceBefore' | 'balanceAfter' | 'untouched';
 type StoredReceipt = Omit<BurnReceipt, BigKeys> & Record<BigKeys, string>;
 type StoredClaim = Omit<ClaimReceipt, 'amount' | 'gasUsed' | 'gasCost'> & { amount: string; gasUsed: string; gasCost: string };
+
+type StoredBaseline = Omit<Baseline, 'balance'> & { balance: string };
 
 export interface Ledger {
   receipts: BurnReceipt[];
   claims: ClaimReceipt[];
+  /** Recorded once, before the first claim. Null until the engine has seen the wallet. */
+  baseline: Baseline | null;
 }
 
 export function emptyLedger(): Ledger {
-  return { receipts: [], claims: [] };
+  return { receipts: [], claims: [], baseline: null };
+}
+
+/**
+ * Claimed rewards that should still be in the wallet: every claim, net of its
+ * gas, less every buy and its gas. This is the only money the engine spends.
+ */
+export function claimedPool(ledger: Ledger): Raw {
+  const claimed = ledger.claims.reduce((s, c) => s + c.amount - c.gasCost, 0n);
+  const spent = ledger.receipts.reduce((s, r) => s + r.ethSpent + r.gasCost, 0n);
+  const pool = claimed - spent;
+  return pool > 0n ? pool : 0n;
+}
+
+/** The baseline for `wallet`, or null if it was recorded for a different wallet. */
+export function baselineFor(ledger: Ledger, wallet: Address): Baseline | null {
+  const b = ledger.baseline;
+  return b && b.wallet.toLowerCase() === wallet.toLowerCase() ? b : null;
 }
 
 export async function loadLedger(path = LEDGER_PATH): Promise<Ledger> {
-  let raw: { receipts?: StoredReceipt[]; claims?: StoredClaim[] };
+  let raw: { receipts?: StoredReceipt[]; claims?: StoredClaim[]; baseline?: StoredBaseline | null };
   try {
     raw = JSON.parse(await readFile(resolve(path), 'utf8')) as typeof raw;
   } catch {
@@ -44,8 +65,10 @@ export async function loadLedger(path = LEDGER_PATH): Promise<Ledger> {
       expectedOut: BigInt(r.expectedOut), minOut: BigInt(r.minOut),
       gasUsed: BigInt(r.gasUsed), gasCost: BigInt(r.gasCost),
       balanceBefore: BigInt(r.balanceBefore), balanceAfter: BigInt(r.balanceAfter),
+      untouched: BigInt(r.untouched ?? '0'),
     })),
     claims: (raw.claims ?? []).map((c) => ({ ...c, amount: BigInt(c.amount), gasUsed: BigInt(c.gasUsed), gasCost: BigInt(c.gasCost) })),
+    baseline: raw.baseline ? { ...raw.baseline, balance: BigInt(raw.baseline.balance) } : null,
   };
 }
 
@@ -57,8 +80,10 @@ export async function saveLedger(ledger: Ledger, path = LEDGER_PATH): Promise<vo
       expectedOut: r.expectedOut.toString(), minOut: r.minOut.toString(),
       gasUsed: r.gasUsed.toString(), gasCost: r.gasCost.toString(),
       balanceBefore: r.balanceBefore.toString(), balanceAfter: r.balanceAfter.toString(),
+      untouched: r.untouched.toString(),
     })),
     claims: ledger.claims.map((c) => ({ ...c, amount: c.amount.toString(), gasUsed: c.gasUsed.toString(), gasCost: c.gasCost.toString() })),
+    baseline: ledger.baseline ? { ...ledger.baseline, balance: ledger.baseline.balance.toString() } : null,
   };
   await writeJson(path, stored);
 }
@@ -69,6 +94,7 @@ export function assertReceiptConserved(r: BurnReceipt): void {
     throw new Error(`receipt ${r.id} leaks: ${r.balanceBefore} - ${r.ethSpent} - ${r.gasCost} != ${r.balanceAfter}`);
   }
   if (r.tokensBurned < r.minOut) throw new Error(`receipt ${r.id}: burned ${r.tokensBurned} below minOut ${r.minOut}`);
+  if (r.balanceAfter < r.untouched) throw new Error(`receipt ${r.id}: wallet ${r.balanceAfter} fell below the untouched baseline ${r.untouched}`);
 }
 
 export function formatAmount(raw: Raw, asset: Asset, maxFractionDigits = 4): string {
@@ -90,6 +116,8 @@ export interface SiteData {
   token: Asset;
   native: Asset;
   devWallet: string | null;
+  /** The wallet balance the engine leaves alone, and the claimed pool it may spend. */
+  funds: { untouchedRaw: string | null; untouched: string | null; recordedAt: string | null; claimedPoolRaw: string; claimedPool: string };
   burnAddress: string;
   venues: { feeEscrow: string; factory: string; hook: string; universalRouter: string; poolManager: string };
   policy: Array<{ bucket: string; label: string; bps: number; intent: string }>;
@@ -138,6 +166,13 @@ export function toSiteData(config: FaucetConfig, ledger: Ledger, totalSupply: Ra
     token: config.token,
     native: config.native,
     devWallet: config.devWallet,
+    funds: {
+      untouchedRaw: ledger.baseline ? ledger.baseline.balance.toString() : null,
+      untouched: ledger.baseline ? formatAmount(ledger.baseline.balance, config.native, 6) : null,
+      recordedAt: ledger.baseline ? ledger.baseline.recordedAt : null,
+      claimedPoolRaw: claimedPool(ledger).toString(),
+      claimedPool: formatAmount(claimedPool(ledger), config.native, 6),
+    },
     burnAddress: config.burnAddress,
     venues: {
       feeEscrow: config.pons.feeEscrow, factory: config.pons.factory, hook: config.pons.hook,

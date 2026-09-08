@@ -18,6 +18,14 @@ wallet), the claimable balance in the fee escrow, and finally simulates a buy of
 compares it with the quote. With `FAUCET_DEV_WALLET_KEY` set it also confirms the
 key is the dev wallet.
 
+## What the engine will and will not spend
+
+The first tick records the wallet balance as the untouched baseline and sends
+nothing. From then on only claimed rewards are spent, gas included. `faucet
+baseline` shows the baseline, the wallet, and the claimed pool. If you top the
+wallet up for gas, that ETH is not spent either; `faucet baseline --set` folds
+anything above the ledger's claimed pool into the untouched amount.
+
 ## Running a cycle by hand
 
 ```bash
@@ -56,7 +64,7 @@ key lives only in that process's environment.
 ## When nothing happens
 
 ```
-skip   spendable 0 wei is under the 2000000000000000 wei floor
+skip   spendable claimed rewards 0 wei are under the 2000000000000000 wei floor
 ```
 
 Normal on a quiet cycle: nothing was claimable, or what is in the wallet is

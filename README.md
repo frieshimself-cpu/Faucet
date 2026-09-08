@@ -47,6 +47,13 @@ Pons fee escrow ── claim() ──→ dev wallet
 The recipient of the buy is the burn address, so the tokens go from the market
 to 0x…dEaD inside the same transaction and never sit in a wallet anyone controls.
 
+**Only claimed rewards are spent.** On its first cycle the engine records the
+wallet's balance as an untouched baseline. After that it spends only the pool
+of claimed rewards, measured both as the wallet above that baseline and as the
+ledger's claims net of buys and gas, taking the smaller. Gas comes from the
+pool too. ETH that was already in the wallet, or arrives from anywhere other
+than a claim, is never spent. `faucet baseline` shows the numbers.
+
 | Limit | Default | Why |
 |---|---|---|
 | Cycle | 180 s | Claim, then buy and burn. A quiet cycle does nothing. |
@@ -82,6 +89,7 @@ a simulated buy to the burn address, so nothing is sent until they pass.
 
 ```
 faucet policy                       show the routing policy
+faucet baseline [--set]             show (or record) the wallet balance that is never spent
 faucet claim [--execute] [--mock]   claim creator rewards from the Pons fee escrow
 faucet plan [--mock]                read the wallet and quote the buyback (no spend)
 faucet burn [--execute] [--mock]    one cycle: claim, buy, burn; --execute sends

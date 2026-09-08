@@ -3,6 +3,7 @@
  * faucet — command line for the buyback-and-burn engine.
  *
  *   faucet policy                 print the routing policy and prove it sums to 100%
+ *   faucet baseline [--set]       show (or record) the wallet balance the engine never spends
  *   faucet claim [--execute]      claim creator rewards from the Pons fee escrow
  *   faucet plan                   read the dev wallet, quote the buy, print what would be bought
  *   faucet burn [--execute]       run one cycle (claim → buy → burn); without --execute it is a dry run
@@ -18,12 +19,12 @@
  */
 
 import { rm } from 'node:fs/promises';
-import { claimRewards, execute, plan, readyForLive, routeFor } from './buyback.js';
+import { claimRewards, ensureBaseline, execute, plan, readyForLive, routeFor } from './buyback.js';
 import { CONFIG, assertPolicyBalanced, missingForLive, type FaucetConfig } from './config.js';
 import { EthersChain, MockChain, type Chain } from './evm.js';
 import {
   LEDGER_PATH, MOCK_LEDGER_PATH, MOCK_SITE_DATA_PATH, SITE_DATA_PATH,
-  assertReceiptConserved, emptyLedger, formatAmount, loadLedger, saveLedger, toSiteData, writeJson,
+  assertReceiptConserved, baselineFor, claimedPool, emptyLedger, formatAmount, loadLedger, saveLedger, toSiteData, writeJson,
 } from './ledger.js';
 import { describeRoute, renderClaim, renderPlan, renderReceipt } from './report.js';
 import { run as runLoop } from './runner.js';
@@ -62,6 +63,7 @@ function usage(): string {
     `${bold('faucet')} — every creator reward buys the coin back and burns it`,
     '',
     '  faucet policy                       show the routing policy',
+    '  faucet baseline [--set]             show (or record) the wallet balance that is never spent',
     '  faucet claim [--execute] [--mock]   claim creator rewards from the Pons fee escrow',
     '  faucet plan [--mock]                read the wallet and quote the buyback (no spend)',
     '  faucet burn [--execute] [--mock]    one cycle: claim, buy, burn; --execute sends',
@@ -99,7 +101,7 @@ function mockChain(seed: number): MockChain {
     wallet: MOCK.wallet,
     token: MOCK.token,
     burnAddress: CONFIG.burnAddress,
-    balance: CONFIG.limits.gasReserveWei,
+    balance: 50_000_000_000_000_000n, // 0.05 ETH already in the wallet: never spent
     tokensPerWei: 42_000n + BigInt(seed % 7) * 500n,
     impactPer1e18: 30_000_000_000_000_000n,
     totalSupply: 1_000_000_000n * 10n ** 18n,
@@ -140,11 +142,12 @@ async function cmdClaim(config: FaucetConfig, argv: readonly string[]): Promise<
   out(`\n  claimable in the Pons fee escrow for ${wallet}: ${bold(`${formatAmount(claimable, config.native, 6)} ${config.native.symbol}`)}\n`);
   if (!exec) { out(`  ${dim('dry run — pass --execute to claim')}\n\n`); return; }
 
-  const result = await claimRewards(mock ? { config, chain, ...MOCK, mode: 'mock' } : { config, chain, mode: 'live' });
+  const ledger = mock ? emptyLedger() : await loadLedger();
+  await ensureBaseline(mock ? { config, chain, ledger, ...MOCK } : { config, chain, ledger });
+  const result = await claimRewards(mock ? { config, chain, ledger, ...MOCK, mode: 'mock' } : { config, chain, ledger, mode: 'live' });
   out(`\n${renderClaim(result, config)}\n\n`);
-  if (result.ok && !mock) {
-    const ledger = await loadLedger();
-    ledger.claims.push(result.receipt);
+  if (result.ok) ledger.claims.push(result.receipt);
+  if (!mock) {
     await saveLedger(ledger);
     out(`  wrote ${LEDGER_PATH}\n\n`);
   }
@@ -153,8 +156,14 @@ async function cmdClaim(config: FaucetConfig, argv: readonly string[]): Promise<
 async function cmdPlan(config: FaucetConfig, argv: readonly string[]): Promise<void> {
   const mock = flag(argv, 'mock');
   const chain: Chain = mock ? mockChain(7) : liveChain(config, false);
-  if (mock) (chain as MockChain).credit(mockReward(7, 1));
-  const result = await plan(mock ? { config, chain, ...MOCK } : { config, chain });
+  const ledger = mock ? emptyLedger() : await loadLedger();
+  if (mock) {
+    await ensureBaseline({ config, chain, ledger, ...MOCK });
+    (chain as MockChain).accrue(mockReward(7, 1));
+    const claimed = await claimRewards({ config, chain, ledger, ...MOCK, mode: 'mock' });
+    if (claimed.ok) ledger.claims.push(claimed.receipt);
+  }
+  const result = await plan(mock ? { config, chain, ledger, ...MOCK } : { config, chain, ledger });
   out(`\n${renderPlan(result, config)}\n\n`);
 }
 
@@ -174,13 +183,20 @@ async function cmdBurn(config: FaucetConfig, argv: readonly string[]): Promise<v
   const ledger = mock ? emptyLedger() : await loadLedger(ledgerPath);
   const receipts: BurnReceipt[] = [];
   const mode = mock ? 'mock' : 'live';
+  const base = mock ? { config, chain, ledger, ...MOCK } : { config, chain, ledger };
+
+  const hadBaseline = !!baselineFor(ledger, mock ? MOCK.wallet : config.devWallet!);
+  const baseline = await ensureBaseline(base);
+  if (baseline && !hadBaseline) {
+    out(`\n  baseline: ${formatAmount(baseline.balance, config.native, 6)} ${config.native.symbol} already in the wallet; that amount is never spent\n`);
+  }
 
   for (let round = 1; round <= rounds; round++) {
     if (mock) (chain as MockChain).accrue(mockReward(seed, round));
 
     let claimTx: string | null = null;
     if (exec) {
-      const claimed = await claimRewards(mock ? { config, chain, ...MOCK, mode } : { config, chain, mode });
+      const claimed = await claimRewards({ ...base, mode });
       out(`\n${renderClaim(claimed, config)}\n`);
       if (claimed.ok) { ledger.claims.push(claimed.receipt); claimTx = claimed.receipt.txHash; }
     } else {
@@ -188,7 +204,7 @@ async function cmdBurn(config: FaucetConfig, argv: readonly string[]): Promise<v
       out(`\n  claimable in the fee escrow: ${formatAmount(claimable, config.native, 6)} ${config.native.symbol}  ${dim('(dry run: not claimed; the plan below covers the wallet balance only)')}\n`);
     }
 
-    const result = await plan(mock ? { config, chain, ...MOCK } : { config, chain });
+    const result = await plan(base);
     out(`\n${renderPlan(result, config)}\n`);
     if (!result.ok) continue;
 
@@ -209,7 +225,7 @@ async function cmdBurn(config: FaucetConfig, argv: readonly string[]): Promise<v
     out(`\n${renderReceipt(receipt, config)}\n`);
   }
 
-  if (exec && (receipts.length > 0 || ledger.claims.length > 0)) {
+  if (exec || (baseline && !hadBaseline)) {
     await saveLedger(ledger, ledgerPath);
     out(`\n  wrote ${ledgerPath} (${ledger.receipts.length} burns, ${ledger.claims.length} claims)\n`);
   }
@@ -275,7 +291,9 @@ async function cmdRun(config: FaucetConfig, argv: readonly string[]): Promise<vo
 async function cmdStatus(config: FaucetConfig): Promise<void> {
   const ledger = await loadLedger();
   const data = toSiteData(config, ledger, null);
-  out(`\n  claims         ${data.totals.claims}  (${data.totals.claimed} ${config.native.symbol} from the fee escrow)\n`);
+  out(`\n  untouched      ${data.funds.untouched ?? 'not recorded yet'}${data.funds.untouched ? ` ${config.native.symbol} (in the wallet before the first claim; never spent)` : ''}\n`);
+  out(`  claimed pool   ${data.funds.claimedPool} ${config.native.symbol} (claimed, not yet spent)\n`);
+  out(`  claims         ${data.totals.claims}  (${data.totals.claimed} ${config.native.symbol} from the fee escrow)\n`);
   out(`  burns          ${data.totals.burns}\n`);
   out(`  ${config.native.symbol} spent      ${data.totals.ethSpent}\n`);
   out(`  ${config.token.symbol} burned   ${data.totals.tokensBurned}\n`);
@@ -299,6 +317,37 @@ async function cmdVerify(config: FaucetConfig, argv: readonly string[]): Promise
       `  burned   ${formatAmount(receipt.tokensToBurn, config.token, 2)} ${config.token.symbol} → ${config.burnAddress}\n\n`,
   );
   if (!ok) process.exitCode = 1;
+}
+
+async function cmdBaseline(config: FaucetConfig, argv: readonly string[]): Promise<void> {
+  const chain = liveChain(config, false);
+  const wallet = config.devWallet!;
+  const ledger = await loadLedger();
+  const eth = config.native;
+  const balance = await chain.balance(wallet);
+  const existing = baselineFor(ledger, wallet);
+  const pool = claimedPool(ledger);
+
+  if (flag(argv, 'set')) {
+    // Re-baseline so the claimed pool stays what the ledger says: anything in
+    // the wallet beyond it (a top-up) joins the untouched amount.
+    const untouched = balance > pool ? balance - pool : 0n;
+    ledger.baseline = { wallet, balance: untouched, block: await chain.blockNumber(), recordedAt: new Date().toISOString() };
+    await saveLedger(ledger);
+    out(`\n  recorded baseline ${formatAmount(untouched, eth, 6)} ${eth.symbol} for ${wallet} (wallet ${formatAmount(balance, eth, 6)}, claimed pool ${formatAmount(pool, eth, 6)})\n  wrote ${LEDGER_PATH}\n\n`);
+    return;
+  }
+
+  out(`\n  wallet         ${wallet}\n  balance        ${formatAmount(balance, eth, 6)} ${eth.symbol}\n`);
+  if (existing) {
+    out(`  untouched      ${formatAmount(existing.balance, eth, 6)} ${eth.symbol}  recorded ${existing.recordedAt} at block ${existing.block}; never spent\n`);
+    out(`  claimed pool   ${formatAmount(pool, eth, 6)} ${eth.symbol}  per the ledger; the engine spends only this\n`);
+    const above = balance > existing.balance ? balance - existing.balance : 0n;
+    if (above > pool) out(`  ${dim(`note: ${formatAmount(above - pool, eth, 6)} ${eth.symbol} above the baseline is not from a claim and will not be spent; \`faucet baseline --set\` folds it into the untouched amount`)}\n`);
+  } else {
+    out(`  untouched      not recorded yet; the runner records the balance on its first tick, or run \`faucet baseline --set\`\n`);
+  }
+  out('\n');
 }
 
 async function cmdReset(argv: readonly string[]): Promise<void> {
@@ -380,6 +429,14 @@ async function cmdDoctor(config: FaucetConfig): Promise<void> {
       check(`dev wallet balance ${formatAmount(bal, eth, 6)} ${eth.symbol}`, true);
       const claimable = await probeChain.claimable(config.devWallet);
       check(`claimable creator rewards in the Pons fee escrow: ${formatAmount(claimable, eth, 6)} ${eth.symbol}`, true);
+      const ledger = await loadLedger();
+      const baseline = baselineFor(ledger, config.devWallet);
+      check(
+        baseline
+          ? `untouched baseline ${formatAmount(baseline.balance, eth, 6)} ${eth.symbol} recorded; claimed pool ${formatAmount(claimedPool(ledger), eth, 6)} ${eth.symbol} is all the engine may spend`
+          : `no baseline yet: the runner records the current balance (${formatAmount(bal, eth, 6)} ${eth.symbol}) on its first tick and never spends it`,
+        true,
+      );
     } catch (e) {
       check('dev wallet / escrow readable', false, e instanceof Error ? e.message : String(e));
     }
@@ -404,6 +461,7 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   switch (argv[0]) {
     case 'policy': return cmdPolicy(CONFIG);
+    case 'baseline': return cmdBaseline(CONFIG, argv);
     case 'claim': return cmdClaim(CONFIG, argv);
     case 'plan': return cmdPlan(CONFIG, argv);
     case 'burn': return cmdBurn(CONFIG, argv);

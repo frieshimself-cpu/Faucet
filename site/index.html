@@ -72,7 +72,8 @@
         from every trade in its fee escrow. Every <span data-bind="limits.intervalMinutes">three</span> minutes
         the engine claims them, keeps a small gas reserve, and spends everything else buying the
         token, with the buy delivering the tokens straight to the burn address. They never sit in
-        a wallet anyone controls.
+        a wallet anyone controls. Only claimed rewards are spent: whatever was in the wallet
+        before the first claim is recorded and never touched.
       </p>
       <p class="hero__lede hero__lede--small">
         Every claim and every burn is a public transaction. This page renders the ledger the engine wrote.
@@ -309,7 +310,7 @@
       <li class="stat">
         <span class="stat__label">Spent on buybacks</span>
         <span class="stat__value"><span data-count data-bind="totals.ethSpentNum">0</span> <em data-bind="native.symbol">ETH</em></span>
-        <span class="stat__note">100% of what was claimed, less the gas reserve</span>
+        <span class="stat__note">100% of what was claimed, less gas; never the wallet's own balance</span>
         <span class="stat__spark" data-spark="eth" aria-hidden="true"></span>
       </li>
       <li class="stat">
@@ -336,8 +337,8 @@
       <h2 class="section__title">One inlet, one outlet, <em class="ink">no wallet in between.</em></h2>
       <p class="section__lede">
         Pons credits creator rewards, in ETH, to the dev wallet's balance in its fee escrow. Each cycle
-        the engine calls <code>claim()</code> on the escrow, reads the wallet, keeps a fixed gas reserve,
-        and sends the rest into a single buy with the recipient set to the burn address: on the
+        the engine calls <code>claim()</code> on the escrow, keeps a fixed gas reserve out of what
+        arrived, and sends the rest into a single buy with the recipient set to the burn address: on the
         Pons bonding curve before the token graduates, on its Uniswap v4 pool after. The tokens go
         from the market to 0x…dEaD in the same transaction. The engine then checks the wallet moved
         by exactly the amount sent plus gas, and refuses to record the cycle if it did not.
@@ -396,7 +397,7 @@
               <g class="flow__node" transform="translate(450 100)">
                 <rect width="220" height="160" rx="14" fill="url(#nodeSkin)" stroke="rgba(255,255,255,.12)"/>
                 <text x="110" y="52" class="flow__nodeTitle" text-anchor="middle">DEV WALLET</text>
-                <text x="110" y="78" class="flow__sub" text-anchor="middle">balance − gas reserve</text>
+                <text x="110" y="78" class="flow__sub" text-anchor="middle">claimed − gas reserve</text>
                 <text x="110" y="118" class="flow__pct" text-anchor="middle" id="flowSpendPct">100%</text>
                 <text x="110" y="140" class="flow__sub" text-anchor="middle">to the buy</text>
               </g>
@@ -470,6 +471,7 @@
 
       <dl class="constants__grid">
         <div><dt>Cycle</dt><dd>every <span data-bind="limits.interval">180</span> s<small>claim from the escrow, then buy and burn; a quiet cycle does nothing</small></dd></div>
+        <div><dt>Funds</dt><dd>claimed rewards only<small>the wallet balance before the first claim (<span data-bind="funds.untouched">not recorded yet</span>) is never spent; gas comes from the rewards too</small></dd></div>
         <div><dt>Source</dt><dd>Pons fee escrow<small><code data-bind="venues.feeEscrowShort">0xd3AF…Ac9e</code>; claim() pays the caller its accrued creator rewards</small></dd></div>
         <div><dt>Minimum claim</dt><dd><span data-bind="limits.minClaim">0.0005</span> <span data-bind="native.symbol">ETH</span><small>below this the rewards are left in the escrow for a later cycle</small></dd></div>
         <div><dt>Gas reserve</dt><dd><span data-bind="limits.gasReserve">0.001</span> <span data-bind="native.symbol">ETH</span><small>kept in the wallet so the next cycle can always pay for gas</small></dd></div>
@@ -565,7 +567,9 @@
     <div class="notes">
       <div class="notes__col">
         <h3>What "all creator rewards" means</h3>
-        <p>Everything Pons credits the dev wallet in its fee escrow is claimed and, above a fixed gas reserve, spent on the token and burned. There is no team allocation from rewards and no second recipient. Gas for the claim and the buy comes out of the reserve, which is itself refilled by the next reward.</p>
+        <p>Everything Pons credits the dev wallet in its fee escrow is claimed and, above a fixed gas reserve, spent on the token and burned. There is no team allocation from rewards and no second recipient. Gas for the claim and the buy comes out of the rewards, never out of the wallet's own balance.</p>
+        <h3>Only claimed rewards are spent</h3>
+        <p>On its first cycle the engine records what is already in the wallet and treats that amount as untouchable. From then on it spends only the pool of claimed rewards, measured both as the wallet balance above that baseline and as the ledger's claims net of buys and gas, taking the smaller. ETH sent to the wallet from anywhere else is not a reward and is left alone.</p>
         <h3>What is actually live</h3>
         <p>The engine is real and tested: a real EVM runs the claim, the buy and the burn in the test suite, and the Pons and Uniswap v4 calls were checked against Robinhood Chain by simulation. The ledger on this page starts empty and fills only with real transactions. Until the first cycle it shows zero, and that is the truth.</p>
         <h3>Who holds the key</h3>
@@ -599,6 +603,7 @@
           <tr><th scope="row">Pons</th><td>fee escrow <code data-bind="venues.feeEscrow">0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e</code></td><td><span class="pill pill--ok">verified</span></td></tr>
           <tr><th scope="row">Token</th><td><span data-bind="token.address">not yet configured</span></td><td><span class="pill" id="pillToken">unset</span></td></tr>
           <tr><th scope="row">Dev wallet</th><td><span data-bind="devWallet">to be provided</span></td><td><span class="pill" id="pillWallet">unset</span></td></tr>
+          <tr><th scope="row">Funds</th><td>untouched <span data-bind="funds.untouched">not recorded yet</span> &middot; claimed pool <span data-bind="funds.claimedPool">0</span> <span data-bind="native.symbol">ETH</span></td><td><span class="pill" id="pillFunds">pending</span></td></tr>
           <tr><th scope="row">Ledger</th><td><span data-bind="totals.claims">0</span> claims &middot; <span data-bind="totals.burns">0</span> burns &middot; <span data-bind="modeLabel">none yet</span></td><td><span class="pill" id="pillMode">empty</span></td></tr>
           <tr><th scope="row">Site</th><td>Static, built from <code data-bind="build.short">0000000</code> on <span data-bind="build.branch">main</span>, <span data-bind="build.date">today</span></td><td><span class="pill pill--ok">live</span></td></tr>
         </tbody>

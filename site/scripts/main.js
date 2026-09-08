@@ -42,6 +42,8 @@
       'venues.feeEscrow': (d.venues || {}).feeEscrow || '',
       'venues.feeEscrowShort': short((d.venues || {}).feeEscrow || ''),
       'modeLabel': d.mode === 'live' ? 'on-chain' : d.mode === 'mock' ? 'mock chain' : 'no cycles yet',
+      'funds.untouched': (d.funds && d.funds.untouched) ? `${d.funds.untouched} ${d.native.symbol}` : 'not recorded yet',
+      'funds.claimedPool': (d.funds && d.funds.claimedPool) || '0',
       'totals.claimedNum': d.totals.claimed || '0',
       'totals.claims': String(d.totals.claims || 0),
       'totals.ethSpentNum': d.totals.ethSpent,
@@ -224,6 +226,12 @@
     pill('pillChain', d.chain.chainId !== null, 'set', 'unset');
     pill('pillToken', !!d.token.address, 'set', 'unset');
     pill('pillWallet', !!d.devWallet, 'set', 'unset');
+    const fundsPill = document.getElementById('pillFunds');
+    if (fundsPill) {
+      const rec = !!(d.funds && d.funds.untouched);
+      fundsPill.textContent = rec ? 'baselined' : 'pending';
+      fundsPill.className = `pill ${rec ? 'pill--ok' : ''}`;
+    }
     const mode = document.getElementById('pillMode');
     if (mode) {
       mode.textContent = d.mode === 'live' ? 'on-chain' : d.mode === 'mock' ? 'synthetic' : 'empty';

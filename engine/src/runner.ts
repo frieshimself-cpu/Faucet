@@ -14,15 +14,17 @@
 import { execFileSync } from 'node:child_process';
 import { closeSync, existsSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { claimRewards, execute, plan, type PlanResult } from './buyback.js';
+import { claimRewards, ensureBaseline, execute, plan, type PlanResult } from './buyback.js';
 import type { FaucetConfig } from './config.js';
 import type { Chain } from './evm.js';
-import { LEDGER_PATH, SITE_DATA_PATH, assertReceiptConserved, loadLedger, saveLedger, toSiteData, writeJson } from './ledger.js';
+import { LEDGER_PATH, SITE_DATA_PATH, assertReceiptConserved, loadLedger, saveLedger, toSiteData, writeJson, type Ledger } from './ledger.js';
 import type { Address, BurnReceipt, ClaimReceipt, SkipReason } from './types.js';
 
 export interface RunnerOptions {
   readonly config: FaucetConfig;
   readonly chain: Chain;
+  /** Set by `run`; `tick` callers supply their own. */
+  readonly ledger?: Ledger;
   readonly intervalSeconds: number;
   readonly mode: 'live' | 'mock';
   /** Address overrides for mock mode. */
@@ -40,6 +42,7 @@ export interface RunnerOptions {
 }
 
 export type TickOutcome =
+  | { readonly kind: 'baselined'; readonly balance: bigint }
   | { readonly kind: 'burned'; readonly receipt: BurnReceipt; readonly claim: ClaimReceipt | null }
   | { readonly kind: 'claimed'; readonly claim: ClaimReceipt; readonly reason: string }
   | { readonly kind: 'skipped'; readonly reason: string }
@@ -85,20 +88,33 @@ function isAlive(pid: number): boolean {
 export function describeSkip(skip: SkipReason): string {
   switch (skip.kind) {
     case 'unconfigured': return `unconfigured: ${skip.missing.join(', ')}`;
-    case 'below-floor': return `spendable ${skip.spendable} wei is under the ${skip.floor} wei floor`;
+    case 'below-floor': return `spendable claimed rewards ${skip.spendable} wei are under the ${skip.floor} wei floor`;
     case 'no-route': return `no route: ${skip.detail}`;
+    case 'no-baseline': return 'no baseline recorded for this wallet';
   }
 }
 
 /** One cycle. Throws on a failure after something was signed; the runner records it. */
 export async function tick(options: RunnerOptions, id: number): Promise<TickOutcome> {
   const { config, chain, mode, overrides } = options;
-  const base = overrides ? { config, chain, ...overrides } : { config, chain };
+  const ledger = options.ledger ?? { receipts: [], claims: [], baseline: null };
+  const base = overrides ? { config, chain, ledger, ...overrides } : { config, chain, ledger };
 
   let claim: ClaimReceipt | null = null;
   try {
+    // First sight of the wallet: record what is in it and leave that alone.
+    if (!ledger.baseline) {
+      const baseline = await ensureBaseline(base);
+      if (baseline) return { kind: 'baselined', balance: baseline.balance };
+    }
+
     const claimed = await claimRewards({ ...base, mode });
-    if (claimed.ok) claim = claimed.receipt;
+    if (claimed.ok) {
+      claim = claimed.receipt;
+      // Into the ledger at once, so the plan below may spend it and so a
+      // failure later in the tick cannot lose the record of it.
+      ledger.claims.push(claim);
+    }
 
     const planned: PlanResult = await plan(base);
     if (!planned.ok) {
@@ -185,7 +201,7 @@ export async function run(options: RunnerOptions, stop: Promise<void>): Promise<
 
       try {
         if (options.beforeTick) await options.beforeTick(n);
-        outcome = await tick(options, ledger.receipts.length + 1);
+        outcome = await tick({ ...options, ledger }, ledger.receipts.length + 1);
         backoff = 0;
       } catch (error) {
         failures += 1;
@@ -199,13 +215,14 @@ export async function run(options: RunnerOptions, stop: Promise<void>): Promise<
       }
 
       const stamp = new Date().toISOString().slice(11, 19);
-      const claimed = outcome.kind === 'skipped' ? null : outcome.claim;
+      const claimed = outcome.kind === 'skipped' || outcome.kind === 'baselined' ? null : outcome.claim;
       if (claimed) {
         claims += 1;
-        ledger.claims.push(claimed);
         log(`${stamp}  claim  ${claimed.amount} wei from the fee escrow  tx ${claimed.txHash}`);
       }
-      if (outcome.kind === 'burned') {
+      if (outcome.kind === 'baselined') {
+        log(`${stamp}  baseline  ${outcome.balance} wei already in the wallet; that amount is never spent`);
+      } else if (outcome.kind === 'burned') {
         burns += 1;
         ledger.receipts.push(outcome.receipt);
         log(`${stamp}  burn #${outcome.receipt.id}  ${outcome.receipt.venue}  spent ${outcome.receipt.ethSpent} wei  burned ${outcome.receipt.tokensBurned}  tx ${outcome.receipt.txHash}`);
@@ -214,7 +231,7 @@ export async function run(options: RunnerOptions, stop: Promise<void>): Promise<
       } else {
         log(`${stamp}  FAIL   ${outcome.error}  (backing off ${outcome.backoffSeconds}s)`);
       }
-      if (claimed || outcome.kind === 'burned') await publish();
+      if (claimed || outcome.kind === 'burned' || outcome.kind === 'baselined') await publish();
 
       maybeCommit();
       if (options.onTick) await options.onTick(outcome);

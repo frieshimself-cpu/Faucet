@@ -68,8 +68,10 @@
                                                         ──→ balance check, to the wei
                                                         ──→ ledger entry</code></pre>
       <p><strong>claim</strong> reads the escrow's <code>balanceOf</code> for the dev wallet and, if it is above the minimum, sends <code>claim()</code> and checks the wallet received exactly that amount less gas. <strong>plan</strong> reads the wallet, subtracts the gas reserve, runs the remainder through the routing policy (one bucket, but the same code path a multi-bucket policy would use), reads the launch record to pick the venue, quotes it, and derives the minimum output. Nothing is signed. <strong>execute</strong> takes a plan and sends exactly that. A dry run and a live run compute the same plan; the only difference is whether execute is called.</p>
+      <h3>Only claimed rewards</h3>
+      <p>On its first cycle the engine records the wallet's balance as an untouched baseline and sends nothing. After that it spends only the pool of claimed rewards: the wallet above the baseline, or the ledger's claims net of buys and gas, whichever is smaller. Gas comes from that pool too. ETH that was already in the wallet, or arrives from anywhere other than a claim, is never spent, and a receipt that would leave the wallet below the baseline is refused. <code>faucet baseline</code> shows the numbers.</p>
       <h3>Quiet cycles</h3>
-      <p>If nothing is claimable, or the spendable amount is under the minimum buyback (0.002 ETH by default), the cycle does nothing. Spending most of a small reward on gas would be worse than waiting, so the rewards stay where they are and the next cycle sees them.</p>
+      <p>If nothing is claimable, or the claimed pool is under the minimum buyback (0.002 ETH by default), the cycle does nothing. Spending most of a small reward on gas would be worse than waiting, so the rewards stay where they are and the next cycle sees them.</p>
 
       <h2 id="claim">The claim</h2>
       <p>Pons does not pay creator rewards to the wallet; it credits them to the creator's balance in its fee escrow contract, in ETH, on every trade. <code>balanceOf(creator)</code> reads that balance and <code>claim()</code> pays it to the caller. The escrow reverts on an empty claim, so the engine reads first and only sends when there is something above the minimum (0.0005 ETH) worth the gas.</p>
@@ -88,6 +90,8 @@
       <h2 id="conservation">Conservation</h2>
       <p>Before recording a cycle the engine checks, in wei:</p>
       <pre><code>balance_before − eth_spent − gas_cost == balance_after
+balance_after ≥ untouched baseline
+spend + gas_reserve ≤ min(balance − baseline, claimed pool)
 tokens_burned ≥ minOut
 gas_cost ≤ gas_reserve
 claimed == escrow.balanceOf(wallet) before the claim</code></pre>
@@ -127,6 +131,7 @@ claimed == escrow.balanceOf(wallet) before the claim</code></pre>
 
       <h2 id="cli">CLI</h2>
       <pre><code>faucet policy                       show the routing policy and prove it sums to 100%
+faucet baseline [--set]             show (or record) the wallet balance that is never spent
 faucet claim [--execute] [--mock]   claim creator rewards from the Pons fee escrow
 faucet plan [--mock]                read the wallet and quote the buyback (no spend)
 faucet burn [--execute] [--mock]    one cycle: claim, buy, burn; --execute sends

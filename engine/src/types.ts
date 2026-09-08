@@ -85,10 +85,26 @@ export interface LaunchInfo {
   readonly poolLiquidity: Raw;
 }
 
+/**
+ * The wallet's balance the moment the engine first saw it, before any claim.
+ * Everything up to this amount is left alone forever; only ETH that arrived
+ * through a claim is ever spent.
+ */
+export interface Baseline {
+  readonly wallet: Address;
+  readonly balance: Raw;
+  readonly block: number;
+  readonly recordedAt: string;
+}
+
 /** What the engine intends to do, before anything is signed. */
 export interface BuybackPlan {
   readonly wallet: Address;
   readonly balance: Raw;
+  /** The baseline: never spent. */
+  readonly untouched: Raw;
+  /** Claimed rewards still in the wallet, per the ledger. */
+  readonly claimedPool: Raw;
   readonly gasReserve: Raw;
   readonly spend: Raw;
   readonly expectedOut: Raw;
@@ -103,6 +119,7 @@ export interface BuybackPlan {
 /** Why a cycle did not settle. */
 export type SkipReason =
   | { readonly kind: 'below-floor'; readonly spendable: Raw; readonly floor: Raw }
+  | { readonly kind: 'no-baseline' }
   | { readonly kind: 'unconfigured'; readonly missing: readonly string[] }
   | { readonly kind: 'no-route'; readonly detail: string };
 
@@ -135,6 +152,8 @@ export interface BurnReceipt {
   readonly gasCost: Raw;
   readonly balanceBefore: Raw;
   readonly balanceAfter: Raw;
+  /** The baseline in force: balanceAfter never falls below it. */
+  readonly untouched: Raw;
   /** The claim that fed this burn, when one happened in the same cycle. */
   readonly claimTx: string | null;
   readonly mode: 'live' | 'mock';

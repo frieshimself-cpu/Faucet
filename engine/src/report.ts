@@ -46,13 +46,15 @@ export function renderPlan(result: PlanResult, config: FaucetConfig): string {
     lines.push('  ┌─ plan');
     if (result.skip.kind === 'unconfigured') {
       lines.push(`  │  NOT READY  missing: ${result.skip.missing.join(', ')}`);
+    } else if (result.skip.kind === 'no-baseline') {
+      lines.push('  │  NO BASELINE  the engine has not recorded the wallet\'s untouched balance yet (the runner does this on its first tick)');
     } else if (result.skip.kind === 'no-route') {
       lines.push(`  │  wallet balance ${formatAmount(result.balance, eth, 6)} ${eth.symbol}`);
       lines.push(`  │  NO ROUTE  ${result.skip.detail}`);
     } else {
       lines.push(`  │  wallet balance ${formatAmount(result.balance, eth, 6)} ${eth.symbol}`);
       lines.push(
-        `  │  NOT SETTLED  spendable ${formatAmount(result.skip.spendable, eth, 6)} ${eth.symbol} is under the ` +
+        `  │  NOT SETTLED  spendable claimed rewards ${formatAmount(result.skip.spendable, eth, 6)} ${eth.symbol} are under the ` +
           `${formatAmount(result.skip.floor, eth, 6)} ${eth.symbol} floor; nothing bought this cycle`,
       );
     }
@@ -65,8 +67,10 @@ export function renderPlan(result: PlanResult, config: FaucetConfig): string {
   lines.push('  │');
   lines.push(`  │  wallet        ${p.wallet}`);
   lines.push(`  │  balance       ${formatAmount(p.balance, eth, 6)} ${eth.symbol}`);
-  lines.push(`  │  gas reserve   ${formatAmount(p.gasReserve, eth, 6)} ${eth.symbol}  (kept)`);
-  lines.push(`  │  spend         ${formatAmount(p.spend, eth, 6)} ${eth.symbol}  (100.00% → buyback)`);
+  lines.push(`  │  untouched     ${formatAmount(p.untouched, eth, 6)} ${eth.symbol}  (was in the wallet before the first claim; never spent)`);
+  lines.push(`  │  claimed pool  ${formatAmount(p.claimedPool, eth, 6)} ${eth.symbol}  (rewards claimed, net of what was spent)`);
+  lines.push(`  │  gas reserve   ${formatAmount(p.gasReserve, eth, 6)} ${eth.symbol}  (kept, from the pool)`);
+  lines.push(`  │  spend         ${formatAmount(p.spend, eth, 6)} ${eth.symbol}  (100.00% of the rest → buyback)`);
   lines.push('  │');
   lines.push(`  │  venue         ${describeRoute(p.route)}`);
   lines.push(`  │  quote         ${formatAmount(p.expectedOut, tok, 2)} ${tok.symbol}`);
@@ -91,6 +95,7 @@ export function renderReceipt(r: BurnReceipt, config: FaucetConfig): string {
     `  │  burned        ${formatAmount(r.tokensBurned, tok, 2)} ${tok.symbol}  (quote ${formatAmount(r.expectedOut, tok, 2)}, realised slippage ${(realised / 100).toFixed(2)}%)`,
     `  │  gas           ${formatAmount(r.gasCost, eth, 8)} ${eth.symbol}`,
     `  │  wallet        ${formatAmount(r.balanceBefore, eth, 6)} → ${formatAmount(r.balanceAfter, eth, 6)} ${eth.symbol}`,
+    `  │  untouched     ${formatAmount(r.untouched, eth, 6)} ${eth.symbol}  (${r.balanceAfter >= r.untouched ? 'intact' : 'BREACHED'})`,
     `  │  conserved     ${r.balanceBefore - r.ethSpent - r.gasCost === r.balanceAfter ? 'yes' : 'NO'}`,
     ...(r.claimTx ? [`  │  fed by claim  ${r.claimTx}`] : []),
     '  └─',

@@ -9,19 +9,48 @@
 
 import { assertPolicyBalanced, missingForLive, type FaucetConfig } from './config.js';
 import { SwapRejectedError, type Chain } from './evm.js';
+import { baselineFor, claimedPool, type Ledger } from './ledger.js';
 import { poolKeyFor } from './pons.js';
 import { allocate, bucketAmount } from './router.js';
-import { NATIVE, type Address, type BurnReceipt, type BuybackPlan, type ClaimReceipt, type LaunchInfo, type Raw, type Route, type SkipReason } from './types.js';
+import { NATIVE, type Address, type Baseline, type BurnReceipt, type BuybackPlan, type ClaimReceipt, type LaunchInfo, type Raw, type Route, type SkipReason } from './types.js';
 
 export class BuybackError extends Error {}
 
 export interface CycleInput {
   readonly config: FaucetConfig;
   readonly chain: Chain;
+  /** Holds the baseline and the claim history the plan is bounded by. */
+  readonly ledger: Ledger;
   /** Overrides for mock runs where the config has no addresses. */
   readonly wallet?: Address;
   readonly token?: Address;
   readonly now?: () => number;
+}
+
+/* ── baseline ────────────────────────────────────────────────────────────── */
+
+/**
+ * Records the wallet's balance the first time the engine sees it, before any
+ * claim. That amount is never spent: only ETH that later arrives through a
+ * claim is. Returns the baseline in force, recording one if none exists for
+ * this wallet.
+ */
+export async function ensureBaseline(input: CycleInput): Promise<Baseline | null> {
+  const wallet = input.wallet ?? input.config.devWallet;
+  if (!wallet) return null;
+  const existing = baselineFor(input.ledger, wallet);
+  if (existing) return existing;
+  if (input.ledger.claims.length > 0 || input.ledger.receipts.length > 0) {
+    throw new BuybackError(
+      `the ledger has claims or burns for another wallet but no baseline for ${wallet}; ` +
+        `run \`faucet baseline --set\` to record one deliberately`,
+    );
+  }
+  const balance = await input.chain.balance(wallet);
+  const block = await input.chain.blockNumber();
+  const baseline: Baseline = { wallet, balance, block, recordedAt: new Date().toISOString() };
+  input.ledger.baseline = baseline;
+  return baseline;
 }
 
 /* ── claim ───────────────────────────────────────────────────────────────── */
@@ -106,13 +135,25 @@ export async function plan(input: CycleInput): Promise<PlanResult> {
   if (!token) missing.push('token');
   if (!wallet || !token) return { ok: false, skip: { kind: 'unconfigured', missing }, balance: 0n };
 
+  const baseline = baselineFor(input.ledger, wallet);
+  if (!baseline) return { ok: false, skip: { kind: 'no-baseline' }, balance: 0n };
+
   const balance = await chain.balance(wallet);
   const { gasReserveWei, minBuybackWei, slippageBps, deadlineSeconds } = config.limits;
 
-  // Everything above the gas reserve is the amount to route. The policy has
-  // one bucket, but it still goes through `allocate` so the 100% invariant is
-  // enforced by the same code path a multi-bucket policy would use.
-  const spendable = balance > gasReserveWei ? balance - gasReserveWei : 0n;
+  // Only claimed rewards are spent. The pool is measured two ways, the wallet
+  // above its baseline and the ledger's claims net of spends and gas, and the
+  // smaller wins: a top-up from elsewhere is not a reward, and gas lost to a
+  // failure that never reached the ledger is not spendable either. The gas
+  // reserve is kept inside the pool, so gas is paid from rewards too.
+  const untouched = baseline.balance;
+  const pool = claimedPool(input.ledger);
+  const inWallet = balance > untouched ? balance - untouched : 0n;
+  const available = inWallet < pool ? inWallet : pool;
+  const spendable = available > gasReserveWei ? available - gasReserveWei : 0n;
+  // The policy has one bucket, but it still goes through `allocate` so the
+  // 100% invariant is enforced by the same code path a multi-bucket policy
+  // would use.
   const spend = spendable > 0n ? bucketAmount(allocate(spendable, config.routing), 'buyback') : 0n;
 
   if (spend < minBuybackWei) {
@@ -132,6 +173,8 @@ export async function plan(input: CycleInput): Promise<PlanResult> {
   const result: BuybackPlan = {
     wallet,
     balance,
+    untouched,
+    claimedPool: pool,
     gasReserve: gasReserveWei,
     spend,
     expectedOut,
@@ -147,10 +190,18 @@ export async function plan(input: CycleInput): Promise<PlanResult> {
   return { ok: true, plan: result, launch };
 }
 
-/** The plan must account for the whole balance: spend + reserve, nothing else. */
+/**
+ * The plan may only spend claimed rewards: never the baseline, never more than
+ * the ledger says was claimed, and always leaving the gas reserve.
+ */
 export function assertPlanConserved(p: BuybackPlan): void {
-  if (p.spend + p.gasReserve !== p.balance) {
-    throw new BuybackError(`plan leaks: spend ${p.spend} + reserve ${p.gasReserve} != balance ${p.balance}`);
+  if (p.spend + p.gasReserve > p.balance - p.untouched) {
+    throw new BuybackError(
+      `plan would touch the baseline: spend ${p.spend} + reserve ${p.gasReserve} > balance ${p.balance} - untouched ${p.untouched}`,
+    );
+  }
+  if (p.spend + p.gasReserve > p.claimedPool) {
+    throw new BuybackError(`plan exceeds claimed rewards: spend ${p.spend} + reserve ${p.gasReserve} > claimed pool ${p.claimedPool}`);
   }
   if (p.minOut > p.expectedOut) throw new BuybackError('minOut exceeds the quote');
   if (p.to.toLowerCase() !== '0x000000000000000000000000000000000000dead') {
@@ -229,6 +280,10 @@ export async function execute(input: ExecuteInput): Promise<BurnReceipt> {
     throw new BuybackError(`gas ${gasCost} exceeded the reserve ${p.gasReserve}; raise FAUCET_GAS_RESERVE_WEI`);
   }
 
+  if (balanceAfter < p.untouched) {
+    throw new BuybackError(`wallet fell below its untouched baseline: ${balanceAfter} < ${p.untouched}`);
+  }
+
   return {
     id,
     txHash,
@@ -244,6 +299,7 @@ export async function execute(input: ExecuteInput): Promise<BurnReceipt> {
     gasCost,
     balanceBefore: p.balance,
     balanceAfter,
+    untouched: p.untouched,
     claimTx: input.claimTx ?? null,
     mode,
   };

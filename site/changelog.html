@@ -58,6 +58,7 @@
           <div>
             <h2>Pons claim, curve and v4 routes, verified on Robinhood Chain <span class="tag">engine</span><span class="tag">site</span></h2>
             <ul>
+              <li><strong>Only claimed rewards.</strong> The first cycle records the wallet balance as an untouched baseline. From then on the engine spends only claimed rewards (the smaller of the wallet above the baseline and the ledger's claims net of buys and gas), gas included; the wallet's own ETH and any top-up are never spent.</li>
               <li><strong>Claim.</strong> Creator rewards accrue in the Pons fee escrow, not the wallet. Each cycle now starts with <code>balanceOf</code> and <code>claim()</code> on the escrow, checked to the wei, before the buy.</li>
               <li><strong>Routes.</strong> The engine reads the Pons factory's launch record every cycle and buys on the bonding curve before graduation (<code>buy(amountIn, minOut, burn)</code>) or on the Uniswap v4 pool after (Universal Router <code>V4_SWAP</code> with <code>TAKE</code> to the burn address). The Uniswap V2 path is gone; Pons does not use it.</li>
               <li><strong>Verified.</strong> Every address and call was simulated against Robinhood Chain mainnet (chain id 4663) before being written down: the escrow claim, the curve buy to the burn address, the pool id derivation, the V4 quoter against the router's actual fill, and both slippage reverts. The chain and contract constants are now built in; only the token and the dev wallet come from the environment.</li>

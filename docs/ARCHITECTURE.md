@@ -20,6 +20,23 @@ sends exactly that, then verifies the wallet moved by exactly `spend + gas`. A
 dry run and a live run compute the same plan; the only difference is whether
 `execute` is called.
 
+## Only claimed rewards
+
+`ensureBaseline` records the wallet balance the first time the engine sees it
+(`ledger.baseline`). `plan` then spends from the claimed pool only:
+
+```
+in_wallet  = balance − baseline
+in_ledger  = Σ(claim.amount − claim.gas) − Σ(burn.spent + burn.gas)
+available  = min(in_wallet, in_ledger)
+spend      = available − gas_reserve
+```
+
+The wallet-side figure protects the baseline; the ledger-side figure ignores
+top-ups that are not rewards and gas lost to failures that never reached the
+ledger. `assertPlanConserved` refuses a plan that would breach either, and the
+receipt check refuses to record a burn that left the wallet below its baseline.
+
 ## Routing
 
 A Pons v2 launch trades on its bonding curve until it graduates, then on a
@@ -60,6 +77,8 @@ Before a cycle is recorded:
 
 ```
 balance_before − eth_spent − gas_cost == balance_after   (wei)
+balance_after ≥ baseline
+spend + gas_reserve ≤ min(balance − baseline, claimed pool)
 tokens_burned ≥ amountOutMin
 gas_cost ≤ gas_reserve
 claimed == feeEscrow.balanceOf(wallet) before the claim
