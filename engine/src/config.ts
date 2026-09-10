@@ -85,7 +85,7 @@ export const ROUTING: RoutingPolicy = {
 export const CONFIG: FaucetConfig = {
   project: {
     name: 'Robinhood',
-    ticker: process.env['FAUCET_TOKEN_SYMBOL'] ?? 'ROBIN',
+    ticker: process.env['FAUCET_TOKEN_SYMBOL'] ?? 'FAUCET',
     tagline: 'Every creator reward buys the coin back and burns it.',
     launchpad: 'Pons',
     chain: ROBINHOOD_CHAIN.name,
@@ -96,8 +96,9 @@ export const CONFIG: FaucetConfig = {
     explorerTx: process.env['FAUCET_EXPLORER_TX'] ?? ROBINHOOD_CHAIN.explorerTx,
   },
   token: {
-    address: envAddress('FAUCET_TOKEN'),
-    symbol: process.env['FAUCET_TOKEN_SYMBOL'] ?? 'ROBIN',
+    // The launched token on Pons v2, Robinhood Chain. Override with FAUCET_TOKEN.
+    address: envAddress('FAUCET_TOKEN') ?? ('0x6d1b86adfd30d7913d5f0dae6568bd566e6b6327' as Address),
+    symbol: process.env['FAUCET_TOKEN_SYMBOL'] ?? 'FAUCET',
     decimals: 18,
   },
   native: {

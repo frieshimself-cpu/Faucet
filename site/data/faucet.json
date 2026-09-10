@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-08T20:20:09.618Z",
+  "generatedAt": "2026-09-10T20:33:33.141Z",
   "mode": "none",
   "project": {
     "name": "Robinhood",
-    "ticker": "ROBIN",
+    "ticker": "FAUCET",
     "tagline": "Every creator reward buys the coin back and burns it.",
     "launchpad": "Pons",
     "chain": "Robinhood Chain"
@@ -14,8 +14,8 @@
     "explorerTx": "https://robinhoodchain.blockscout.com/tx/"
   },
   "token": {
-    "address": null,
-    "symbol": "ROBIN",
+    "address": "0x6d1b86adfd30d7913d5f0dae6568bd566e6b6327",
+    "symbol": "FAUCET",
     "decimals": 18
   },
   "native": {

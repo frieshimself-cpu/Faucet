@@ -57,6 +57,7 @@ test('the shipped config points at Robinhood Chain and the Pons v2 contracts', (
   assert.equal(CONFIG.pons.factory, '0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e');
   assert.ok(MIN_CLAIM > 0n);
   assert.equal(CONFIG.limits.intervalSeconds, 180);
+  assert.equal(CONFIG.token.address, '0x6d1b86adfd30d7913d5f0dae6568bd566e6b6327');
 });
 
 test('ETH already in the wallet is never spent: without a claim there is nothing to buy with', async () => {

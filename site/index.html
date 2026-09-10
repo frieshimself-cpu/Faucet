@@ -87,7 +87,7 @@
 
       <div class="ca">
         <span class="ca__label">Token</span>
-        <code class="ca__value" id="contractValue" data-bind="token.address">not yet deployed</code>
+        <code class="ca__value" id="contractValue" data-bind="token.address">0x6d1b86adfd30d7913d5f0dae6568bd566e6b6327</code>
         <button class="ca__copy" type="button" data-copy-target="#contractValue" aria-label="Copy token address">
           <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6.5" y="6.5" width="10" height="12" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M13.5 4.5h-8a2 2 0 0 0-2 2v9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
           <span class="ca__copy-text">Copy</span>
@@ -601,7 +601,7 @@
           <tr><th scope="row">Engine</th><td>v<span data-bind="build.version">0.1.0</span> &middot; <span data-bind="build.tests">17</span> tests passing &middot; one runtime dependency (ethers)</td><td><span class="pill pill--ok">ok</span></td></tr>
           <tr><th scope="row">Chain</th><td><span data-bind="project.chain">Robinhood Chain</span> &middot; chain id <span data-bind="chain.chainId">4663</span></td><td><span class="pill pill--ok" id="pillChain">set</span></td></tr>
           <tr><th scope="row">Pons</th><td>fee escrow <code data-bind="venues.feeEscrow">0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e</code></td><td><span class="pill pill--ok">verified</span></td></tr>
-          <tr><th scope="row">Token</th><td><span data-bind="token.address">not yet configured</span></td><td><span class="pill" id="pillToken">unset</span></td></tr>
+          <tr><th scope="row">Token</th><td><span data-bind="token.address">0x6d1b86adfd30d7913d5f0dae6568bd566e6b6327</span></td><td><span class="pill" id="pillToken">unset</span></td></tr>
           <tr><th scope="row">Dev wallet</th><td><span data-bind="devWallet">to be provided</span></td><td><span class="pill" id="pillWallet">unset</span></td></tr>
           <tr><th scope="row">Funds</th><td>untouched <span data-bind="funds.untouched">not recorded yet</span> &middot; claimed pool <span data-bind="funds.claimedPool">0</span> <span data-bind="native.symbol">ETH</span></td><td><span class="pill" id="pillFunds">pending</span></td></tr>
           <tr><th scope="row">Ledger</th><td><span data-bind="totals.claims">0</span> claims &middot; <span data-bind="totals.burns">0</span> burns &middot; <span data-bind="modeLabel">none yet</span></td><td><span class="pill" id="pillMode">empty</span></td></tr>
